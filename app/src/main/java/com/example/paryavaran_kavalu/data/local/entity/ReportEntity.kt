@@ -6,11 +6,12 @@ import androidx.room.PrimaryKey
 @Entity(tableName = "reports")
 data class ReportEntity(
     @PrimaryKey(autoGenerate = true)
-    val id: Long = 0,
-    val title: String,
+    val id: Int = 0,
+    val wasteType: String,
     val description: String,
-    val timestamp: Long,
+    val imageUri: String,
     val latitude: Double,
     val longitude: Double,
-    val imagePath: String? = null
+    val status: String, // "Pending" or "Cleaned"
+    val timestamp: Long
 )
