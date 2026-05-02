@@ -3,6 +3,7 @@ package com.example.paryavaran_kavalu.ui.screens.map
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -41,18 +42,18 @@ fun MapScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = ForestGreen,
-                    titleContentColor = Color.White,
-                    navigationIconContentColor = Color.White,
-                    actionIconContentColor = Color.White
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary,
+                    actionIconContentColor = MaterialTheme.colorScheme.onPrimary
                 )
             )
         },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = onNavigateToReport,
-                containerColor = ForestGreen,
-                contentColor = Color.White,
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
                 elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 6.dp)
             ) {
                 Row(
@@ -65,7 +66,7 @@ fun MapScreen(
                 }
             }
         },
-        containerColor = OffWhite
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
 
         Box(
@@ -90,11 +91,10 @@ fun MapScreen(
 private fun MapPlaceholder(modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
-            .background(GreenSurface)
-            .border(2.dp, LightGreen),
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(0.dp)),
         contentAlignment = Alignment.Center
     ) {
-        // Simulated grid lines for map feel
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
@@ -102,20 +102,20 @@ private fun MapPlaceholder(modifier: Modifier = Modifier) {
             Icon(
                 imageVector = Icons.Filled.LocationOn,
                 contentDescription = null,
-                tint = ForestGreen.copy(alpha = 0.4f),
+                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f),
                 modifier = Modifier.size(64.dp)
             )
             Spacer(modifier = Modifier.height(16.dp))
             Text(
                 text = "Map Here",
                 style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
-                color = ForestGreen.copy(alpha = 0.5f)
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = "Google Maps will render here\nafter API integration",
                 style = MaterialTheme.typography.bodyMedium,
-                color = TextSecondary,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
             )
         }
@@ -127,16 +127,18 @@ private fun MapLegend(modifier: Modifier = Modifier) {
     Card(
         modifier = modifier,
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.92f)),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
+        ),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(
                 text = "Legend",
                 style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                color = TextPrimary
+                color = MaterialTheme.colorScheme.onSurface
             )
-            LegendItem(color = PendingRed, label = "Pending")
+            LegendItem(color = MaterialTheme.colorScheme.error, label = "Pending")
             LegendItem(color = CleanedGreen, label = "Cleaned")
         }
     }
@@ -148,9 +150,9 @@ private fun LegendItem(color: Color, label: String) {
         Box(
             modifier = Modifier
                 .size(10.dp)
-                .clip(RoundedCornerShape(50))
+                .clip(CircleShape)
                 .background(color)
         )
-        Text(text = label, style = MaterialTheme.typography.labelSmall)
+        Text(text = label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurface)
     }
 }

@@ -51,13 +51,13 @@ fun ReportListScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = ForestGreen,
-                    titleContentColor = Color.White,
-                    navigationIconContentColor = Color.White
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
                 )
             )
         },
-        containerColor = OffWhite
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Column(
             modifier = Modifier
@@ -75,8 +75,8 @@ fun ReportListScreen(
                         onClick = { selectedFilter = filter },
                         label = { Text(filter) },
                         colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = ForestGreen,
-                            selectedLabelColor = Color.White
+                            selectedContainerColor = MaterialTheme.colorScheme.primary,
+                            selectedLabelColor = MaterialTheme.colorScheme.onPrimary
                         )
                     )
                 }
@@ -84,7 +84,7 @@ fun ReportListScreen(
 
             if (filteredReports.isEmpty()) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("No reports found", color = TextSecondary)
+                    Text("No reports found", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             } else {
                 LazyColumn(
@@ -111,7 +111,7 @@ private fun ReportListItem(report: WasteReport, onClick: () -> Unit) {
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        colors = CardDefaults.cardColors(containerColor = CardWhite)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
@@ -124,7 +124,7 @@ private fun ReportListItem(report: WasteReport, onClick: () -> Unit) {
                     .size(14.dp)
                     .clip(CircleShape)
                     .background(
-                        if (report.status == ReportStatus.PENDING) PendingRed else CleanedGreen
+                        if (report.status == ReportStatus.PENDING) MaterialTheme.colorScheme.error else CleanedGreen
                     )
             )
 
@@ -136,26 +136,27 @@ private fun ReportListItem(report: WasteReport, onClick: () -> Unit) {
                 ) {
                     Text(
                         text = report.wasteType.label,
-                        style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold)
+                        style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                     StatusPill(status = report.status)
                 }
                 Text(
                     text = report.description.take(70) + if (report.description.length > 70) "…" else "",
                     style = MaterialTheme.typography.bodySmall,
-                    color = TextSecondary
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
                     text = "📍 ${"%.4f".format(report.latitude)}, ${"%.4f".format(report.longitude)}",
                     style = MaterialTheme.typography.labelSmall,
-                    color = ForestGreen.copy(alpha = 0.7f)
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
                 )
             }
 
             Icon(
                 Icons.Filled.ChevronRight,
                 contentDescription = null,
-                tint = TextSecondary
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
@@ -164,7 +165,7 @@ private fun ReportListItem(report: WasteReport, onClick: () -> Unit) {
 @Composable
 private fun StatusPill(status: ReportStatus) {
     val (label, bg, fg) = when (status) {
-        ReportStatus.PENDING -> Triple("Pending", PendingRed.copy(alpha = 0.12f), PendingRed)
+        ReportStatus.PENDING -> Triple("Pending", MaterialTheme.colorScheme.errorContainer, MaterialTheme.colorScheme.error)
         ReportStatus.CLEANED -> Triple("Cleaned", CleanedGreen.copy(alpha = 0.12f), CleanedGreen)
     }
     Box(

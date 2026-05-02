@@ -17,15 +17,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.paryavaran_kavalu.ui.theme.ForestGreen
-import com.example.paryavaran_kavalu.ui.theme.DarkGreen
-import com.example.paryavaran_kavalu.ui.theme.LightGreen
+import com.example.paryavaran_kavalu.ui.theme.*
 import kotlinx.coroutines.delay
 
 @Composable
 fun SplashScreen(onNavigateToHome: () -> Unit = {}) {
 
-    // Animate icon scale: 0.5 → 1.0
     val scale by animateFloatAsState(
         targetValue = 1f,
         animationSpec = spring(
@@ -35,7 +32,6 @@ fun SplashScreen(onNavigateToHome: () -> Unit = {}) {
         label = "iconScale"
     )
 
-    // Fade-in for text
     val alpha by animateFloatAsState(
         targetValue = 1f,
         animationSpec = tween(durationMillis = 1200, easing = FastOutSlowInEasing),
@@ -52,7 +48,11 @@ fun SplashScreen(onNavigateToHome: () -> Unit = {}) {
             .fillMaxSize()
             .background(
                 brush = Brush.verticalGradient(
-                    colors = listOf(DarkGreen, ForestGreen, LightGreen)
+                    colors = listOf(
+                        MaterialTheme.colorScheme.primaryContainer,
+                        MaterialTheme.colorScheme.primary,
+                        MaterialTheme.colorScheme.onPrimaryContainer
+                    )
                 )
             ),
         contentAlignment = Alignment.Center
@@ -61,11 +61,10 @@ fun SplashScreen(onNavigateToHome: () -> Unit = {}) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // Leaf / eco icon
             Icon(
                 imageVector = Icons.Filled.Eco,
                 contentDescription = "Paryavaran Kavalu Logo",
-                tint = Color.White,
+                tint = MaterialTheme.colorScheme.onPrimary,
                 modifier = Modifier
                     .size(100.dp)
                     .scale(scale)
@@ -79,7 +78,7 @@ fun SplashScreen(onNavigateToHome: () -> Unit = {}) {
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 0.5.sp
                 ),
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onPrimary,
                 modifier = Modifier.alpha(alpha)
             )
 
@@ -88,7 +87,7 @@ fun SplashScreen(onNavigateToHome: () -> Unit = {}) {
             Text(
                 text = "Paryavaran Kavalu",
                 style = MaterialTheme.typography.titleMedium,
-                color = LightGreen,
+                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f),
                 modifier = Modifier.alpha(alpha)
             )
 
@@ -97,7 +96,7 @@ fun SplashScreen(onNavigateToHome: () -> Unit = {}) {
             Text(
                 text = "Community Cleanliness · Geo-tagging",
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color.White.copy(alpha = 0.75f),
+                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.75f),
                 textAlign = TextAlign.Center,
                 modifier = Modifier
                     .alpha(alpha)
@@ -105,11 +104,10 @@ fun SplashScreen(onNavigateToHome: () -> Unit = {}) {
             )
         }
 
-        // Bottom tagline
         Text(
             text = "Together for a cleaner tomorrow 🌿",
             style = MaterialTheme.typography.bodySmall,
-            color = Color.White.copy(alpha = 0.6f),
+            color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.6f),
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .padding(bottom = 40.dp)

@@ -10,6 +10,8 @@ import kotlinx.coroutines.flow.update
 
 enum class ReportStatus { PENDING, CLEANED }
 
+enum class UserRole { CITIZEN, VOLUNTEER }
+
 enum class WasteType(val label: String) {
     GENERAL("General Waste"),
     PLASTIC("Plastic / Recyclable"),
@@ -37,9 +39,17 @@ class ReportViewModel : ViewModel() {
     private val _reports = MutableStateFlow(dummyReports())
     val reports: StateFlow<List<WasteReport>> = _reports.asStateFlow()
 
+    private val _userRole = MutableStateFlow(UserRole.CITIZEN)
+    val userRole: StateFlow<UserRole> = _userRole.asStateFlow()
+
     /** Add a new report to the list */
     fun addReport(report: WasteReport) {
         _reports.update { current -> current + report }
+    }
+
+    /** Set the user role */
+    fun setUserRole(role: UserRole) {
+        _userRole.value = role
     }
 
     /** Mark an existing report as cleaned */

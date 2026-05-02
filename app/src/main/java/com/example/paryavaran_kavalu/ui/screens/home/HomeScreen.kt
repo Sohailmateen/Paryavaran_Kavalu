@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.sp
 import com.example.paryavaran_kavalu.ui.theme.*
 import com.example.paryavaran_kavalu.viewmodel.ReportStatus
 import com.example.paryavaran_kavalu.viewmodel.ReportViewModel
+import com.example.paryavaran_kavalu.viewmodel.UserRole
 import com.example.paryavaran_kavalu.viewmodel.WasteReport
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -40,24 +41,30 @@ fun HomeScreen(
     onNavigateToDetail: (String) -> Unit
 ) {
     val reports by viewModel.reports.collectAsState()
+    val userRole by viewModel.userRole.collectAsState()
+    
     val pendingCount = reports.count { it.status == ReportStatus.PENDING }
     val cleanedCount = reports.count { it.status == ReportStatus.CLEANED }
-    val ecoKarmaPoints = 1240 // This could be moved to ViewModel later
+    val ecoKarmaPoints = 1240 
 
     Scaffold(
         topBar = {
-            HomeTopBar(userName = "Sohail")
+            HomeTopBar(
+                userName = "Sohail",
+                userRole = userRole,
+                onRoleChange = { viewModel.setUserRole(it) }
+            )
         },
         floatingActionButton = {
             ExtendedFloatingActionButton(
                 onClick = onNavigateToReport,
                 icon = { Icon(Icons.Filled.Add, "Add") },
                 text = { Text("Report Waste") },
-                containerColor = ForestGreen,
-                contentColor = Color.White
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
             )
         },
-        containerColor = OffWhite
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         LazyColumn(
             modifier = Modifier
@@ -66,6 +73,14 @@ fun HomeScreen(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            // Role Selector (In case TopBar is too crowded, but I'll put it here for clarity)
+            item {
+                RoleSelector(
+                    currentRole = userRole,
+                    onRoleChange = { viewModel.setUserRole(it) }
+                )
+            }
+
             // Eco-Karma Card
             item {
                 EcoKarmaCard(points = ecoKarmaPoints)
@@ -77,7 +92,7 @@ fun HomeScreen(
                     text = "Your Impact",
                     style = MaterialTheme.typography.titleMedium.copy(
                         fontWeight = FontWeight.SemiBold,
-                        color = TextPrimary
+                        color = MaterialTheme.colorScheme.onBackground
                     )
                 )
                 Spacer(modifier = Modifier.height(8.dp))
@@ -90,16 +105,16 @@ fun HomeScreen(
                         icon = Icons.Default.Report,
                         label = "Pending",
                         value = pendingCount.toString(),
-                        iconTint = AccentRed,
-                        iconBackground = Color(0xFFFFEBEE)
+                        iconTint = MaterialTheme.colorScheme.error,
+                        iconBackground = MaterialTheme.colorScheme.errorContainer
                     )
                     StatCard(
                         modifier = Modifier.weight(1f),
                         icon = Icons.Default.CheckCircle,
                         label = "Cleaned",
                         value = cleanedCount.toString(),
-                        iconTint = AccentGreen,
-                        iconBackground = Color(0xFFE8F5E9)
+                        iconTint = CleanedGreen, // Custom status green
+                        iconBackground = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
                     )
                 }
             }
@@ -109,7 +124,7 @@ fun HomeScreen(
                 Text(
                     text = "Quick Actions",
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                    color = TextPrimary
+                    color = MaterialTheme.colorScheme.onBackground
                 )
             }
             item {
@@ -142,12 +157,12 @@ fun HomeScreen(
                     Text(
                         text = "Recent Reports",
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                        color = TextPrimary
+                        color = MaterialTheme.colorScheme.onBackground
                     )
                     TextButton(onClick = onNavigateToList) {
                         Text(
                             text = "See All",
-                            color = ForestGreen,
+                            color = MaterialTheme.colorScheme.primary,
                             style = MaterialTheme.typography.labelMedium
                         )
                     }
@@ -162,7 +177,43 @@ fun HomeScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun HomeTopBar(userName: String) {
+private fun RoleSelector(
+    currentRole: UserRole,
+    onRoleChange: (UserRole) -> Unit
+) {
+    SingleChoiceSegmentedButtonRow(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        SegmentedButton(
+            selected = currentRole == UserRole.CITIZEN,
+            onClick = { onRoleChange(UserRole.CITIZEN) },
+            shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
+            icon = { SegmentedButtonDefaults.Icon(active = currentRole == UserRole.CITIZEN) {
+                Icon(Icons.Default.Person, null)
+            }}
+        ) {
+            Text("Citizen")
+        }
+        SegmentedButton(
+            selected = currentRole == UserRole.VOLUNTEER,
+            onClick = { onRoleChange(UserRole.VOLUNTEER) },
+            shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
+            icon = { SegmentedButtonDefaults.Icon(active = currentRole == UserRole.VOLUNTEER) {
+                Icon(Icons.Default.Build, null)
+            }}
+        ) {
+            Text("Volunteer")
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun HomeTopBar(
+    userName: String,
+    userRole: UserRole,
+    onRoleChange: (UserRole) -> Unit
+) {
     TopAppBar(
         title = {
             Column {
@@ -170,13 +221,13 @@ private fun HomeTopBar(userName: String) {
                     text = "Paryavaran Kavalu",
                     style = MaterialTheme.typography.titleMedium.copy(
                         fontWeight = FontWeight.Bold,
-                        color = Color.White
+                        color = MaterialTheme.colorScheme.onPrimary
                     )
                 )
                 Text(
-                    text = "Hello, $userName 👋",
+                    text = "Hello, $userName (${if (userRole == UserRole.CITIZEN) "Citizen" else "Volunteer"}) 👋",
                     style = MaterialTheme.typography.bodySmall.copy(
-                        color = LightGreen
+                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
                     )
                 )
             }
@@ -186,7 +237,7 @@ private fun HomeTopBar(userName: String) {
                 Icon(
                     imageVector = Icons.Default.Notifications,
                     contentDescription = "Notifications",
-                    tint = Color.White
+                    tint = MaterialTheme.colorScheme.onPrimary
                 )
             }
             IconButton(onClick = {}) {
@@ -194,12 +245,12 @@ private fun HomeTopBar(userName: String) {
                     modifier = Modifier
                         .size(32.dp)
                         .clip(CircleShape)
-                        .background(LightGreen),
+                        .background(MaterialTheme.colorScheme.primaryContainer),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = userName.first().toString(),
-                        color = ForestGreen,
+                        text = userName.take(1),
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
                         fontWeight = FontWeight.Bold,
                         fontSize = 14.sp
                     )
@@ -207,7 +258,7 @@ private fun HomeTopBar(userName: String) {
             }
         },
         colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = ForestGreen
+            containerColor = MaterialTheme.colorScheme.primary
         )
     )
 }
@@ -224,7 +275,10 @@ private fun EcoKarmaCard(points: Int) {
                 .fillMaxWidth()
                 .background(
                     brush = Brush.linearGradient(
-                        colors = listOf(DarkGreen, ForestGreen, Color(0xFF43A047))
+                        colors = listOf(
+                            MaterialTheme.colorScheme.primary,
+                            MaterialTheme.colorScheme.secondary
+                        )
                     )
                 )
                 .padding(24.dp)
@@ -240,14 +294,14 @@ private fun EcoKarmaCard(points: Int) {
                     Icon(
                         imageVector = Icons.Default.Eco,
                         contentDescription = "Eco Karma",
-                        tint = LightGreen,
+                        tint = MaterialTheme.colorScheme.onPrimary,
                         modifier = Modifier.size(28.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = "Eco-Karma Points",
                         style = MaterialTheme.typography.titleMedium.copy(
-                            color = LightGreen,
+                            color = MaterialTheme.colorScheme.onPrimary,
                             fontWeight = FontWeight.Medium
                         )
                     )
@@ -258,7 +312,7 @@ private fun EcoKarmaCard(points: Int) {
                 Text(
                     text = "%,d".format(points),
                     style = MaterialTheme.typography.displayMedium.copy(
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onPrimary,
                         fontWeight = FontWeight.ExtraBold,
                         fontSize = 56.sp
                     ),
@@ -269,13 +323,13 @@ private fun EcoKarmaCard(points: Int) {
 
                 Surface(
                     shape = RoundedCornerShape(50.dp),
-                    color = Color(0x33FFFFFF)
+                    color = Color.White.copy(alpha = 0.2f)
                 ) {
                     Text(
                         text = "🏅 Community Ranger",
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
                         style = MaterialTheme.typography.labelMedium.copy(
-                            color = Color.White,
+                            color = MaterialTheme.colorScheme.onPrimary,
                             fontWeight = FontWeight.SemiBold
                         )
                     )
@@ -291,11 +345,11 @@ private fun EcoKarmaCard(points: Int) {
                     ) {
                         Text(
                             text = "Next: Eco Warrior",
-                            style = MaterialTheme.typography.labelSmall.copy(color = LightGreen)
+                            style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onPrimary)
                         )
                         Text(
                             text = "1240 / 2000",
-                            style = MaterialTheme.typography.labelSmall.copy(color = LightGreen)
+                            style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onPrimary)
                         )
                     }
                     Spacer(modifier = Modifier.height(4.dp))
@@ -305,8 +359,8 @@ private fun EcoKarmaCard(points: Int) {
                             .fillMaxWidth()
                             .height(6.dp)
                             .clip(RoundedCornerShape(50.dp)),
-                        color = LightGreen,
-                        trackColor = Color(0x33FFFFFF)
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        trackColor = Color.White.copy(alpha = 0.2f)
                     )
                 }
             }
@@ -326,7 +380,7 @@ private fun StatCard(
     Card(
         modifier = modifier,
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = CardWhite),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
@@ -354,13 +408,13 @@ private fun StatCard(
                 text = value,
                 style = MaterialTheme.typography.headlineMedium.copy(
                     fontWeight = FontWeight.ExtraBold,
-                    color = TextPrimary
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             )
             Text(
                 text = label,
                 style = MaterialTheme.typography.bodySmall.copy(
-                    color = TextSecondary
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             )
         }
@@ -377,7 +431,7 @@ private fun QuickActionCard(
     Card(
         modifier = modifier.clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = GreenSurface),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
@@ -385,9 +439,9 @@ private fun QuickActionCard(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center
         ) {
-            Icon(icon, contentDescription = label, tint = ForestGreen)
+            Icon(icon, contentDescription = label, tint = MaterialTheme.colorScheme.primary)
             Spacer(modifier = Modifier.width(8.dp))
-            Text(text = label, style = MaterialTheme.typography.labelLarge, color = ForestGreen)
+            Text(text = label, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
         }
     }
 }
@@ -400,7 +454,7 @@ private fun ReportSummaryCard(report: WasteReport, onClick: () -> Unit) {
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
@@ -417,15 +471,16 @@ private fun ReportSummaryCard(report: WasteReport, onClick: () -> Unit) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = report.wasteType.label,
-                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold)
+                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
                     text = report.description.take(60) + if (report.description.length > 60) "…" else "",
                     style = MaterialTheme.typography.bodySmall,
-                    color = TextSecondary
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            Icon(Icons.Filled.ChevronRight, contentDescription = null, tint = TextSecondary)
+            Icon(Icons.Filled.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }

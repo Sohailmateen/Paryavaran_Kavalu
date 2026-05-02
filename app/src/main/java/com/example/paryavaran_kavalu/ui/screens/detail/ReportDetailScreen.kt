@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import com.example.paryavaran_kavalu.ui.theme.*
 import com.example.paryavaran_kavalu.viewmodel.ReportStatus
 import com.example.paryavaran_kavalu.viewmodel.ReportViewModel
+import com.example.paryavaran_kavalu.viewmodel.UserRole
 import com.example.paryavaran_kavalu.viewmodel.WasteReport
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -31,11 +32,12 @@ fun ReportDetailScreen(
     onBack: () -> Unit = {}
 ) {
     val reports by viewModel.reports.collectAsState()
+    val userRole by viewModel.userRole.collectAsState()
     val report = reports.find { it.id == reportId }
 
     if (report == null) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("Report not found")
+            Text("Report not found", color = MaterialTheme.colorScheme.onBackground)
         }
         return
     }
@@ -50,13 +52,13 @@ fun ReportDetailScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = ForestGreen,
-                    titleContentColor = Color.White,
-                    navigationIconContentColor = Color.White
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
                 )
             )
         },
-        containerColor = OffWhite
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Column(
             modifier = Modifier
@@ -81,7 +83,7 @@ fun ReportDetailScreen(
                     Text(
                         text = report.wasteType.label,
                         style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-                        color = TextPrimary
+                        color = MaterialTheme.colorScheme.onBackground
                     )
                     StatusBadge(status = report.status)
                 }
@@ -91,7 +93,7 @@ fun ReportDetailScreen(
                     Text(
                         text = report.description,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = TextSecondary
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
 
@@ -103,43 +105,70 @@ fun ReportDetailScreen(
                     }
                 }
 
-                // Mark as Cleaned button
-                if (report.status == ReportStatus.PENDING) {
-                    Button(
-                        onClick = { viewModel.markAsCleaned(report.id) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(52.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = ForestGreen)
-                    ) {
-                        Icon(Icons.Filled.CheckCircle, contentDescription = null)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Mark as Cleaned",
-                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold)
-                        )
+                // Conditional Rendering based on Role
+                if (userRole == UserRole.VOLUNTEER) {
+                    if (report.status == ReportStatus.PENDING) {
+                        Button(
+                            onClick = { viewModel.markAsCleaned(report.id) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(52.dp),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary
+                            )
+                        ) {
+                            Icon(Icons.Filled.CheckCircle, contentDescription = null)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Mark as Cleaned",
+                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold)
+                            )
+                        }
+                    } else {
+                        // Already cleaned state
+                        OutlinedButton(
+                            onClick = {},
+                            enabled = false,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(52.dp),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                disabledContentColor = CleanedGreen
+                            )
+                        ) {
+                            Icon(Icons.Filled.CheckCircle, contentDescription = null, tint = CleanedGreen)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Already Cleaned ✓",
+                                color = CleanedGreen,
+                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold)
+                            )
+                        }
                     }
                 } else {
-                    // Already cleaned state
-                    OutlinedButton(
-                        onClick = {},
-                        enabled = false,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(52.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            disabledContentColor = CleanedGreen
+                    // Citizen view - inform them that volunteers will clean this
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer
                         )
                     ) {
-                        Icon(Icons.Filled.CheckCircle, contentDescription = null, tint = CleanedGreen)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Already Cleaned ✓",
-                            color = CleanedGreen,
-                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold)
-                        )
+                        Row(
+                            modifier = Modifier.padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(Icons.Filled.Info, null, tint = MaterialTheme.colorScheme.onSecondaryContainer)
+                            Text(
+                                text = if (report.status == ReportStatus.PENDING) 
+                                    "Volunteers have been notified to clean this spot." 
+                                else "Thank you for reporting! This spot has been cleaned.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer
+                            )
+                        }
                     }
                 }
             }
@@ -153,21 +182,21 @@ private fun ReportImagePlaceholder() {
         modifier = Modifier
             .fillMaxWidth()
             .height(220.dp)
-            .background(GreenSurface),
+            .background(MaterialTheme.colorScheme.surfaceVariant),
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Icon(
                 imageVector = Icons.Filled.Image,
                 contentDescription = "Image",
-                tint = LightGreen,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                 modifier = Modifier.size(56.dp)
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = "Report Image",
                 style = MaterialTheme.typography.bodyMedium,
-                color = ForestGreen.copy(alpha = 0.6f)
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
             )
         }
     }
@@ -176,7 +205,7 @@ private fun ReportImagePlaceholder() {
 @Composable
 private fun StatusBadge(status: ReportStatus) {
     val (label, bgColor, textColor) = when (status) {
-        ReportStatus.PENDING -> Triple("● Pending", PendingRed.copy(alpha = 0.15f), PendingRed)
+        ReportStatus.PENDING -> Triple("● Pending", MaterialTheme.colorScheme.errorContainer, MaterialTheme.colorScheme.error)
         ReportStatus.CLEANED -> Triple("✓ Cleaned", CleanedGreen.copy(alpha = 0.15f), CleanedGreen)
     }
     Box(
@@ -202,19 +231,19 @@ private fun DetailCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = CardWhite),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Icon(icon, contentDescription = title, tint = ForestGreen, modifier = Modifier.size(20.dp))
+                Icon(icon, contentDescription = title, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
                 Text(
                     text = title,
                     style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
-                    color = ForestGreen
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
-            HorizontalDivider(color = LightGreen.copy(alpha = 0.5f))
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             content()
         }
     }
@@ -223,7 +252,7 @@ private fun DetailCard(
 @Composable
 private fun CoordinateRow(label: String, value: String) {
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-        Text(text = label, style = MaterialTheme.typography.bodySmall, color = TextSecondary)
-        Text(text = value, style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium))
+        Text(text = label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(text = value, style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium), color = MaterialTheme.colorScheme.onSurface)
     }
 }

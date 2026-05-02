@@ -42,82 +42,80 @@ fun NewReportScreen(
         ReportSuccessDialog(onDismiss = onNavigateBack)
     }
 
-    Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = OffWhite
-    ) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            // Top Bar
+    Scaffold(
+        topBar = {
             ReportTopBar(onNavigateBack = onNavigateBack)
+        },
+        containerColor = MaterialTheme.colorScheme.background
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Spacer(modifier = Modifier.height(4.dp))
 
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                Spacer(modifier = Modifier.height(4.dp))
+            // Step Indicator
+            StepIndicator(currentStep = if (selectedWasteType == null) 1 else if (description.isEmpty()) 2 else 3)
 
-                // Step Indicator (from new code)
-                StepIndicator(currentStep = if (selectedWasteType == null) 1 else if (description.isEmpty()) 2 else 3)
+            // Info Banner
+            InfoBanner()
 
-                // Info Banner
-                InfoBanner()
+            // Section: Waste Type
+            SectionLabel(text = "Waste Type", required = true)
+            WasteTypeDropdown(
+                selectedWasteType = selectedWasteType,
+                expanded = dropdownExpanded,
+                onExpandedChange = { dropdownExpanded = it },
+                onWasteTypeSelected = {
+                    selectedWasteType = it
+                    dropdownExpanded = false
+                }
+            )
 
-                // Section: Waste Type
-                SectionLabel(text = "Waste Type", required = true)
-                WasteTypeDropdown(
-                    selectedWasteType = selectedWasteType,
-                    expanded = dropdownExpanded,
-                    onExpandedChange = { dropdownExpanded = it },
-                    onWasteTypeSelected = {
-                        selectedWasteType = it
-                        dropdownExpanded = false
-                    }
-                )
+            // Section: Description
+            SectionLabel(text = "Description", required = false)
+            DescriptionField(
+                value = description,
+                onValueChange = { description = it }
+            )
 
-                // Section: Description
-                SectionLabel(text = "Description", required = false)
-                DescriptionField(
-                    value = description,
-                    onValueChange = { description = it }
-                )
+            // Section: Photo Evidence
+            SectionLabel(text = "Photo Evidence", required = false)
+            ImageUploadSection(
+                imageAttached = imageAttached,
+                onUploadClick = { imageAttached = !imageAttached }
+            )
 
-                // Section: Photo Evidence
-                SectionLabel(text = "Photo Evidence", required = false)
-                ImageUploadSection(
-                    imageAttached = imageAttached,
-                    onUploadClick = { imageAttached = !imageAttached }
-                )
+            // Section: Location
+            SectionLabel(text = "Location", required = true)
+            LocationStatusCard()
 
-                // Section: Location
-                SectionLabel(text = "Location", required = true)
-                LocationStatusCard()
+            Spacer(modifier = Modifier.height(8.dp))
 
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // Submit Button
-                SubmitButton(
-                    enabled = selectedWasteType != null,
-                    onClick = {
-                        selectedWasteType?.let { type ->
-                            viewModel.addReport(
-                                WasteReport(
-                                    id = UUID.randomUUID().toString(),
-                                    wasteType = type,
-                                    description = description.ifBlank { "No description provided." },
-                                    latitude = 12.9716, // Placeholder
-                                    longitude = 77.5946 // Placeholder
-                                )
+            // Submit Button
+            SubmitButton(
+                enabled = selectedWasteType != null,
+                onClick = {
+                    selectedWasteType?.let { type ->
+                        viewModel.addReport(
+                            WasteReport(
+                                id = UUID.randomUUID().toString(),
+                                wasteType = type,
+                                description = description.ifBlank { "No description provided." },
+                                latitude = 12.9716,
+                                longitude = 77.5946
                             )
-                            submitted = true
-                        }
+                        )
+                        submitted = true
                     }
-                )
+                }
+            )
 
-                Spacer(modifier = Modifier.height(24.dp))
-            }
+            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }
@@ -132,13 +130,13 @@ private fun ReportTopBar(onNavigateBack: () -> Unit) {
                     text = "New Report",
                     style = MaterialTheme.typography.titleMedium.copy(
                         fontWeight = FontWeight.Bold,
-                        color = Color.White
+                        color = MaterialTheme.colorScheme.onPrimary
                     )
                 )
                 Text(
                     text = "Help keep your community clean",
                     style = MaterialTheme.typography.bodySmall.copy(
-                        color = LightGreen
+                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
                     )
                 )
             }
@@ -148,12 +146,12 @@ private fun ReportTopBar(onNavigateBack: () -> Unit) {
                 Icon(
                     imageVector = Icons.Default.ArrowBack,
                     contentDescription = "Back",
-                    tint = Color.White
+                    tint = MaterialTheme.colorScheme.onPrimary
                 )
             }
         },
         colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = ForestGreen
+            containerColor = MaterialTheme.colorScheme.primary
         )
     )
 }
@@ -163,7 +161,7 @@ private fun InfoBanner() {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        color = Color(0xFFE8F5E9)
+        color = MaterialTheme.colorScheme.secondaryContainer
     ) {
         Row(
             modifier = Modifier.padding(12.dp),
@@ -172,14 +170,14 @@ private fun InfoBanner() {
             Icon(
                 imageVector = Icons.Default.Info,
                 contentDescription = null,
-                tint = ForestGreen,
+                tint = MaterialTheme.colorScheme.onSecondaryContainer,
                 modifier = Modifier.size(20.dp)
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = "Reports are reviewed and dispatched to volunteer cleanup teams.",
                 style = MaterialTheme.typography.bodySmall.copy(
-                    color = DarkGreen
+                    color = MaterialTheme.colorScheme.onSecondaryContainer
                 )
             )
         }
@@ -193,14 +191,14 @@ private fun SectionLabel(text: String, required: Boolean) {
             text = text,
             style = MaterialTheme.typography.labelLarge.copy(
                 fontWeight = FontWeight.SemiBold,
-                color = TextPrimary
+                color = MaterialTheme.colorScheme.onBackground
             )
         )
         if (required) {
             Spacer(modifier = Modifier.width(4.dp))
             Text(
                 text = "*",
-                color = Color(0xFFD32F2F),
+                color = MaterialTheme.colorScheme.error,
                 fontWeight = FontWeight.Bold,
                 fontSize = 16.sp
             )
@@ -227,7 +225,7 @@ private fun WasteTypeDropdown(
             placeholder = {
                 Text(
                     text = "Select waste category",
-                    color = TextSecondary
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             },
             trailingIcon = {
@@ -238,11 +236,10 @@ private fun WasteTypeDropdown(
                 .menuAnchor(),
             shape = RoundedCornerShape(12.dp),
             colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = ForestGreen,
-                unfocusedBorderColor = BorderGray,
-                focusedLabelColor = ForestGreen,
-                unfocusedContainerColor = CardWhite,
-                focusedContainerColor = CardWhite
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                focusedContainerColor = MaterialTheme.colorScheme.surface
             )
         )
 
@@ -256,7 +253,7 @@ private fun WasteTypeDropdown(
                         Text(
                             text = type.label,
                             style = MaterialTheme.typography.bodyMedium.copy(
-                                color = if (type == selectedWasteType) ForestGreen else TextPrimary,
+                                color = if (type == selectedWasteType) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
                                 fontWeight = if (type == selectedWasteType)
                                     FontWeight.SemiBold else FontWeight.Normal
                             )
@@ -268,7 +265,7 @@ private fun WasteTypeDropdown(
                             Icon(
                                 imageVector = Icons.Default.Check,
                                 contentDescription = null,
-                                tint = ForestGreen,
+                                tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(18.dp)
                             )
                         }
@@ -290,7 +287,7 @@ private fun DescriptionField(
         placeholder = {
             Text(
                 text = "Describe the waste situation — amount, severity, any hazards...",
-                color = TextSecondary,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 style = MaterialTheme.typography.bodySmall
             )
         },
@@ -299,10 +296,10 @@ private fun DescriptionField(
             .height(120.dp),
         shape = RoundedCornerShape(12.dp),
         colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = ForestGreen,
-            unfocusedBorderColor = BorderGray,
-            unfocusedContainerColor = CardWhite,
-            focusedContainerColor = CardWhite
+            focusedBorderColor = MaterialTheme.colorScheme.primary,
+            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+            unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+            focusedContainerColor = MaterialTheme.colorScheme.surface
         ),
         maxLines = 5
     )
@@ -315,7 +312,7 @@ private fun DescriptionField(
     ) {
         Text(
             text = "${value.length} / 300",
-            style = MaterialTheme.typography.labelSmall.copy(color = TextSecondary)
+            style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
         )
     }
 }
@@ -333,11 +330,11 @@ private fun ImageUploadSection(
                 .height(160.dp)
                 .clip(RoundedCornerShape(16.dp))
                 .border(
-                    width = 2.dp,
-                    brush = SolidColor(BorderGray),
+                    width = 1.dp,
+                    color = MaterialTheme.colorScheme.outline,
                     shape = RoundedCornerShape(16.dp)
                 )
-                .background(CardWhite)
+                .background(MaterialTheme.colorScheme.surface)
                 .clickable(onClick = onUploadClick),
             contentAlignment = Alignment.Center
         ) {
@@ -348,14 +345,14 @@ private fun ImageUploadSection(
                 Box(
                     modifier = Modifier
                         .size(52.dp)
-                        .clip(RoundedCornerShape(50.dp))
-                        .background(Color(0xFFE8F5E9)),
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primaryContainer),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.Default.CameraAlt,
                         contentDescription = "Upload Image",
-                        tint = ForestGreen,
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
                         modifier = Modifier.size(28.dp)
                     )
                 }
@@ -363,12 +360,12 @@ private fun ImageUploadSection(
                     text = "Tap to upload photo",
                     style = MaterialTheme.typography.bodyMedium.copy(
                         fontWeight = FontWeight.Medium,
-                        color = ForestGreen
+                        color = MaterialTheme.colorScheme.primary
                     )
                 )
                 Text(
                     text = "JPG, PNG up to 10MB",
-                    style = MaterialTheme.typography.labelSmall.copy(color = TextSecondary)
+                    style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
                 )
             }
         }
@@ -379,20 +376,20 @@ private fun ImageUploadSection(
                 .fillMaxWidth()
                 .height(200.dp)
                 .clip(RoundedCornerShape(16.dp))
-                .background(Color(0xFFEEEEEE)),
+                .background(MaterialTheme.colorScheme.surfaceVariant),
             contentAlignment = Alignment.Center
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Icon(
                     imageVector = Icons.Default.Image,
                     contentDescription = "Preview",
-                    tint = TextSecondary,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(48.dp)
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = "waste_photo_001.jpg",
-                    style = MaterialTheme.typography.bodySmall.copy(color = TextSecondary)
+                    style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
                 )
             }
             // Remove button top-right
@@ -401,8 +398,8 @@ private fun ImageUploadSection(
                     .align(Alignment.TopEnd)
                     .padding(8.dp)
                     .size(30.dp)
-                    .clip(RoundedCornerShape(50.dp))
-                    .background(Color(0xCC000000))
+                    .clip(CircleShape)
+                    .background(Color.Black.copy(alpha = 0.6f))
                     .clickable(onClick = onUploadClick),
                 contentAlignment = Alignment.Center
             ) {
@@ -423,13 +420,13 @@ private fun ImageUploadSection(
             Icon(
                 imageVector = Icons.Default.CheckCircle,
                 contentDescription = null,
-                tint = ForestGreen,
+                tint = CleanedGreen,
                 modifier = Modifier.size(16.dp)
             )
             Spacer(modifier = Modifier.width(4.dp))
             Text(
                 text = "Photo attached",
-                style = MaterialTheme.typography.labelSmall.copy(color = ForestGreen)
+                style = MaterialTheme.typography.labelSmall.copy(color = CleanedGreen)
             )
         }
     }
@@ -440,7 +437,7 @@ private fun LocationStatusCard() {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = CardWhite),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Row(
@@ -450,14 +447,14 @@ private fun LocationStatusCard() {
             Box(
                 modifier = Modifier
                     .size(40.dp)
-                    .clip(RoundedCornerShape(50.dp))
-                    .background(Color(0xFFFFF3E0)),
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.tertiaryContainer),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Default.LocationOn,
                     contentDescription = "Location",
-                    tint = AccentAmber,
+                    tint = MaterialTheme.colorScheme.onTertiaryContainer,
                     modifier = Modifier.size(22.dp)
                 )
             }
@@ -467,20 +464,20 @@ private fun LocationStatusCard() {
                     text = "Fetching location...",
                     style = MaterialTheme.typography.bodyMedium.copy(
                         fontWeight = FontWeight.Medium,
-                        color = TextPrimary
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 )
                 Text(
                     text = "GPS coordinates will be auto-tagged",
                     style = MaterialTheme.typography.bodySmall.copy(
-                        color = TextSecondary
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 )
             }
             CircularProgressIndicator(
                 modifier = Modifier.size(20.dp),
                 strokeWidth = 2.dp,
-                color = AccentAmber
+                color = MaterialTheme.colorScheme.tertiary
             )
         }
     }
@@ -499,10 +496,10 @@ private fun SubmitButton(
             .height(56.dp),
         shape = RoundedCornerShape(16.dp),
         colors = ButtonDefaults.buttonColors(
-            containerColor = ForestGreen,
-            contentColor = Color.White,
-            disabledContainerColor = BorderGray,
-            disabledContentColor = TextSecondary
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary,
+            disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+            disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant
         ),
         elevation = ButtonDefaults.buttonElevation(
             defaultElevation = if (enabled) 4.dp else 0.dp
@@ -527,7 +524,7 @@ private fun SubmitButton(
         Text(
             text = "Please select a waste type to submit",
             style = MaterialTheme.typography.labelSmall.copy(
-                color = TextSecondary
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             ),
             modifier = Modifier.fillMaxWidth(),
             textAlign = androidx.compose.ui.text.style.TextAlign.Center
@@ -548,21 +545,32 @@ private fun StepIndicator(currentStep: Int) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Surface(
                     shape = CircleShape,
-                    color = if (isActive) ForestGreen else BorderGray,
+                    color = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
                     modifier = Modifier.size(28.dp)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         if (step < currentStep) {
-                            Icon(Icons.Default.Check, null, tint = Color.White, modifier = Modifier.size(16.dp))
+                            Icon(Icons.Default.Check, null, tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(16.dp))
                         } else {
-                            Text("$step", color = Color.White, style = MaterialTheme.typography.labelMedium)
+                            Text(
+                                text = "$step", 
+                                color = if (isActive) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant, 
+                                style = MaterialTheme.typography.labelMedium
+                            )
                         }
                     }
                 }
-                Text(label, style = MaterialTheme.typography.labelSmall, color = if (isActive) TextPrimary else TextSecondary)
+                Text(
+                    text = label, 
+                    style = MaterialTheme.typography.labelSmall, 
+                    color = if (isActive) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
             if (index < 2) {
-                HorizontalDivider(modifier = Modifier.width(40.dp), color = if (step < currentStep) ForestGreen else BorderGray)
+                HorizontalDivider(
+                    modifier = Modifier.width(40.dp), 
+                    color = if (step < currentStep) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
+                )
             }
         }
     }
@@ -572,12 +580,12 @@ private fun StepIndicator(currentStep: Int) {
 private fun ReportSuccessDialog(onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        icon = { Icon(Icons.Filled.CheckCircle, contentDescription = null, tint = ForestGreen, modifier = Modifier.size(48.dp)) },
+        icon = { Icon(Icons.Filled.CheckCircle, contentDescription = null, tint = CleanedGreen, modifier = Modifier.size(48.dp)) },
         title = { Text("Report Submitted!", fontWeight = FontWeight.Bold) },
         text = { Text("Your waste report has been submitted successfully. Thank you for keeping your community clean! 🌿") },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text("Done", color = ForestGreen, fontWeight = FontWeight.Bold)
+                Text("Done", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
             }
         }
     )
