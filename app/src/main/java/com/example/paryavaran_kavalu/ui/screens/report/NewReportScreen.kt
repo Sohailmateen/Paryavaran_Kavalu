@@ -5,6 +5,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -20,45 +21,26 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.paryavaran_kavalu.ui.theme.*
+import com.example.paryavaran_kavalu.viewmodel.ReportViewModel
+import com.example.paryavaran_kavalu.viewmodel.WasteReport
+import com.example.paryavaran_kavalu.viewmodel.WasteType
+import java.util.UUID
 
-// ─────────────────────────────────────────────
-// Design Tokens (shared with HomeScreen)
-// ─────────────────────────────────────────────
-private val ForestGreen   = Color(0xFF2E7D32)
-private val LightGreen    = Color(0xFFA5D6A7)
-private val DarkGreen     = Color(0xFF1B5E20)
-private val OffWhite      = Color(0xFFF5F5F5)
-private val CardWhite     = Color(0xFFFFFFFF)
-private val TextPrimary   = Color(0xFF1C1B1F)
-private val TextSecondary = Color(0xFF6B7280)
-private val BorderGray    = Color(0xFFE0E0E0)
-private val AccentAmber   = Color(0xFFF59E0B)
-
-// ─────────────────────────────────────────────
-// Data
-// ─────────────────────────────────────────────
-private val wasteTypes = listOf(
-    "🗑️  General Waste",
-    "♻️  Plastic / Recyclable",
-    "🌿  Bio-degradable",
-    "⚡  E-Waste",
-    "☣️  Hazardous / Chemical",
-    "🏗️  Construction Debris",
-    "🚽  Sewage / Drain Blockage"
-)
-
-// ─────────────────────────────────────────────
-// Root Screen
-// ─────────────────────────────────────────────
 @Composable
 fun NewReportScreen(
-    onNavigateBack: () -> Unit = {},
-    onSubmit: () -> Unit = {}
+    viewModel: ReportViewModel,
+    onNavigateBack: () -> Unit = {}
 ) {
-    var selectedWasteType by remember { mutableStateOf("") }
+    var selectedWasteType by remember { mutableStateOf<WasteType?>(null) }
     var description by remember { mutableStateOf("") }
     var imageAttached by remember { mutableStateOf(false) }
     var dropdownExpanded by remember { mutableStateOf(false) }
+    var submitted by remember { mutableStateOf(false) }
+
+    if (submitted) {
+        ReportSuccessDialog(onDismiss = onNavigateBack)
+    }
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -76,6 +58,9 @@ fun NewReportScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Spacer(modifier = Modifier.height(4.dp))
+
+                // Step Indicator (from new code)
+                StepIndicator(currentStep = if (selectedWasteType == null) 1 else if (description.isEmpty()) 2 else 3)
 
                 // Info Banner
                 InfoBanner()
@@ -114,8 +99,21 @@ fun NewReportScreen(
 
                 // Submit Button
                 SubmitButton(
-                    enabled = selectedWasteType.isNotEmpty(),
-                    onClick = onSubmit
+                    enabled = selectedWasteType != null,
+                    onClick = {
+                        selectedWasteType?.let { type ->
+                            viewModel.addReport(
+                                WasteReport(
+                                    id = UUID.randomUUID().toString(),
+                                    wasteType = type,
+                                    description = description.ifBlank { "No description provided." },
+                                    latitude = 12.9716, // Placeholder
+                                    longitude = 77.5946 // Placeholder
+                                )
+                            )
+                            submitted = true
+                        }
+                    }
                 )
 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -124,9 +122,6 @@ fun NewReportScreen(
     }
 }
 
-// ─────────────────────────────────────────────
-// Top Bar
-// ─────────────────────────────────────────────
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ReportTopBar(onNavigateBack: () -> Unit) {
@@ -137,7 +132,7 @@ private fun ReportTopBar(onNavigateBack: () -> Unit) {
                     text = "New Report",
                     style = MaterialTheme.typography.titleMedium.copy(
                         fontWeight = FontWeight.Bold,
-                        color = CardWhite
+                        color = Color.White
                     )
                 )
                 Text(
@@ -153,7 +148,7 @@ private fun ReportTopBar(onNavigateBack: () -> Unit) {
                 Icon(
                     imageVector = Icons.Default.ArrowBack,
                     contentDescription = "Back",
-                    tint = CardWhite
+                    tint = Color.White
                 )
             }
         },
@@ -163,9 +158,6 @@ private fun ReportTopBar(onNavigateBack: () -> Unit) {
     )
 }
 
-// ─────────────────────────────────────────────
-// Info Banner
-// ─────────────────────────────────────────────
 @Composable
 private fun InfoBanner() {
     Surface(
@@ -194,9 +186,6 @@ private fun InfoBanner() {
     }
 }
 
-// ─────────────────────────────────────────────
-// Section Label
-// ─────────────────────────────────────────────
 @Composable
 private fun SectionLabel(text: String, required: Boolean) {
     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -219,23 +208,20 @@ private fun SectionLabel(text: String, required: Boolean) {
     }
 }
 
-// ─────────────────────────────────────────────
-// Waste Type Dropdown
-// ─────────────────────────────────────────────
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun WasteTypeDropdown(
-    selectedWasteType: String,
+    selectedWasteType: WasteType?,
     expanded: Boolean,
     onExpandedChange: (Boolean) -> Unit,
-    onWasteTypeSelected: (String) -> Unit
+    onWasteTypeSelected: (WasteType) -> Unit
 ) {
     ExposedDropdownMenuBox(
         expanded = expanded,
         onExpandedChange = onExpandedChange
     ) {
         OutlinedTextField(
-            value = selectedWasteType,
+            value = selectedWasteType?.label ?: "",
             onValueChange = {},
             readOnly = true,
             placeholder = {
@@ -264,11 +250,11 @@ private fun WasteTypeDropdown(
             expanded = expanded,
             onDismissRequest = { onExpandedChange(false) }
         ) {
-            wasteTypes.forEach { type ->
+            WasteType.entries.forEach { type ->
                 DropdownMenuItem(
                     text = {
                         Text(
-                            text = type,
+                            text = type.label,
                             style = MaterialTheme.typography.bodyMedium.copy(
                                 color = if (type == selectedWasteType) ForestGreen else TextPrimary,
                                 fontWeight = if (type == selectedWasteType)
@@ -293,9 +279,6 @@ private fun WasteTypeDropdown(
     }
 }
 
-// ─────────────────────────────────────────────
-// Description Field
-// ─────────────────────────────────────────────
 @Composable
 private fun DescriptionField(
     value: String,
@@ -337,9 +320,6 @@ private fun DescriptionField(
     }
 }
 
-// ─────────────────────────────────────────────
-// Image Upload Section
-// ─────────────────────────────────────────────
 @Composable
 private fun ImageUploadSection(
     imageAttached: Boolean,
@@ -429,7 +409,7 @@ private fun ImageUploadSection(
                 Icon(
                     imageVector = Icons.Default.Close,
                     contentDescription = "Remove",
-                    tint = CardWhite,
+                    tint = Color.White,
                     modifier = Modifier.size(16.dp)
                 )
             }
@@ -455,9 +435,6 @@ private fun ImageUploadSection(
     }
 }
 
-// ─────────────────────────────────────────────
-// Location Status Card
-// ─────────────────────────────────────────────
 @Composable
 private fun LocationStatusCard() {
     Card(
@@ -509,9 +486,6 @@ private fun LocationStatusCard() {
     }
 }
 
-// ─────────────────────────────────────────────
-// Submit Button
-// ─────────────────────────────────────────────
 @Composable
 private fun SubmitButton(
     enabled: Boolean,
@@ -526,7 +500,7 @@ private fun SubmitButton(
         shape = RoundedCornerShape(16.dp),
         colors = ButtonDefaults.buttonColors(
             containerColor = ForestGreen,
-            contentColor = CardWhite,
+            contentColor = Color.White,
             disabledContainerColor = BorderGray,
             disabledContentColor = TextSecondary
         ),
@@ -561,43 +535,50 @@ private fun SubmitButton(
     }
 }
 
-// ─────────────────────────────────────────────
-// Previews
-// ─────────────────────────────────────────────
-@Preview(showBackground = true, showSystemUi = true, name = "New Report Screen")
 @Composable
-fun NewReportScreenPreview() {
-    MaterialTheme {
-        NewReportScreen()
+private fun StepIndicator(currentStep: Int) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceEvenly,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        listOf("Type", "Describe", "Submit").forEachIndexed { index, label ->
+            val step = index + 1
+            val isActive = step <= currentStep
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Surface(
+                    shape = CircleShape,
+                    color = if (isActive) ForestGreen else BorderGray,
+                    modifier = Modifier.size(28.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        if (step < currentStep) {
+                            Icon(Icons.Default.Check, null, tint = Color.White, modifier = Modifier.size(16.dp))
+                        } else {
+                            Text("$step", color = Color.White, style = MaterialTheme.typography.labelMedium)
+                        }
+                    }
+                }
+                Text(label, style = MaterialTheme.typography.labelSmall, color = if (isActive) TextPrimary else TextSecondary)
+            }
+            if (index < 2) {
+                HorizontalDivider(modifier = Modifier.width(40.dp), color = if (step < currentStep) ForestGreen else BorderGray)
+            }
+        }
     }
 }
 
-//@Preview(showBackground = true, name = "Location Status Card")
-//@Composable
-//fun LocationStatusCardPreview() {
-//    MaterialTheme {
-//        Column(modifier = Modifier.padding(16.dp)) {
-//            LocationStatusCard()
-//        }
-//    }
-//}
-
-//@Preview(showBackground = true, name = "Image Upload — Empty")
-//@Composable
-//fun ImageUploadEmptyPreview() {
-//    MaterialTheme {
-//        Column(modifier = Modifier.padding(16.dp)) {
-//            ImageUploadSection(imageAttached = false, onUploadClick = {})
-//        }
-//    }
-//}
-
-//@Preview(showBackground = true, name = "Image Upload — Attached")
-//@Composable
-//fun ImageUploadAttachedPreview() {
-//    MaterialTheme {
-//        Column(modifier = Modifier.padding(16.dp)) {
-//            ImageUploadSection(imageAttached = true, onUploadClick = {})
-//        }
-//    }
-//}
+@Composable
+private fun ReportSuccessDialog(onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        icon = { Icon(Icons.Filled.CheckCircle, contentDescription = null, tint = ForestGreen, modifier = Modifier.size(48.dp)) },
+        title = { Text("Report Submitted!", fontWeight = FontWeight.Bold) },
+        text = { Text("Your waste report has been submitted successfully. Thank you for keeping your community clean! 🌿") },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Done", color = ForestGreen, fontWeight = FontWeight.Bold)
+            }
+        }
+    )
+}

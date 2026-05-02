@@ -1,12 +1,12 @@
 package com.example.paryavaran_kavalu.navigation
 
-sealed class Screen(val route: String) {
-    object Splash : Screen("splash")
-    object Home : Screen("home")
-    object NewReport : Screen("new_report")
-    object Map : Screen("map")
-    object ReportList : Screen("report_list")
-    object ReportDetail : Screen("report_detail/{reportId}") {
-        fun createRoute(reportId: Long) = "report_detail/$reportId"
-    }
+object Routes {
+    const val SPLASH = "splash"
+    const val HOME = "home"
+    const val REPORT = "report"
+    const val MAP = "map"
+    const val DETAIL = "detail/{reportId}"
+    const val LIST = "list"
+
+    fun detailRoute(reportId: String) = "detail/$reportId"
 }
