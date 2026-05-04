@@ -19,10 +19,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.paryavaran_kavalu.data.local.entity.ReportEntity
 import com.example.paryavaran_kavalu.ui.theme.*
-import com.example.paryavaran_kavalu.viewmodel.ReportStatus
 import com.example.paryavaran_kavalu.viewmodel.ReportViewModel
-import com.example.paryavaran_kavalu.viewmodel.WasteReport
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -31,13 +30,13 @@ fun ReportListScreen(
     onNavigateToDetail: (String) -> Unit = {},
     onBack: () -> Unit = {}
 ) {
-    val reports by viewModel.reports.collectAsState()
+    val reports by viewModel.allReports.collectAsState()
     var selectedFilter by remember { mutableStateOf("All") }
 
     val filters = listOf("All", "Pending", "Cleaned")
     val filteredReports = when (selectedFilter) {
-        "Pending" -> reports.filter { it.status == ReportStatus.PENDING }
-        "Cleaned" -> reports.filter { it.status == ReportStatus.CLEANED }
+        "Pending" -> reports.filter { it.status == "Pending" }
+        "Cleaned" -> reports.filter { it.status == "Cleaned" }
         else -> reports
     }
 
@@ -64,7 +63,6 @@ fun ReportListScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            // Filter chips
             LazyRow(
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -94,7 +92,7 @@ fun ReportListScreen(
                     items(filteredReports) { report ->
                         ReportListItem(
                             report = report,
-                            onClick = { onNavigateToDetail(report.id) }
+                            onClick = { onNavigateToDetail(report.id.toString()) }
                         )
                     }
                 }
@@ -104,7 +102,7 @@ fun ReportListScreen(
 }
 
 @Composable
-private fun ReportListItem(report: WasteReport, onClick: () -> Unit) {
+private fun ReportListItem(report: ReportEntity, onClick: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -118,13 +116,12 @@ private fun ReportListItem(report: WasteReport, onClick: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Status dot
             Box(
                 modifier = Modifier
                     .size(14.dp)
                     .clip(CircleShape)
                     .background(
-                        if (report.status == ReportStatus.PENDING) MaterialTheme.colorScheme.error else CleanedGreen
+                        if (report.status == "Pending") MaterialTheme.colorScheme.error else CleanedGreen
                     )
             )
 
@@ -135,7 +132,7 @@ private fun ReportListItem(report: WasteReport, onClick: () -> Unit) {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = report.wasteType.label,
+                        text = report.wasteType,
                         style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
                         color = MaterialTheme.colorScheme.onSurface
                     )
@@ -163,10 +160,11 @@ private fun ReportListItem(report: WasteReport, onClick: () -> Unit) {
 }
 
 @Composable
-private fun StatusPill(status: ReportStatus) {
+private fun StatusPill(status: String) {
     val (label, bg, fg) = when (status) {
-        ReportStatus.PENDING -> Triple("Pending", MaterialTheme.colorScheme.errorContainer, MaterialTheme.colorScheme.error)
-        ReportStatus.CLEANED -> Triple("Cleaned", CleanedGreen.copy(alpha = 0.12f), CleanedGreen)
+        "Pending" -> Triple("Pending", MaterialTheme.colorScheme.errorContainer, MaterialTheme.colorScheme.error)
+        "Cleaned" -> Triple("Cleaned", CleanedGreen.copy(alpha = 0.12f), CleanedGreen)
+        else -> Triple("Unknown", Color.Gray.copy(alpha = 0.12f), Color.Gray)
     }
     Box(
         modifier = Modifier

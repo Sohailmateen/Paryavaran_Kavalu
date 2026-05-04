@@ -1,6 +1,5 @@
 package com.example.paryavaran_kavalu.ui.screens.home
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -22,14 +21,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.paryavaran_kavalu.ui.theme.*
-import com.example.paryavaran_kavalu.viewmodel.ReportStatus
+import com.example.paryavaran_kavalu.data.local.entity.ReportEntity
+import com.example.paryavaran_kavalu.ui.theme.CleanedGreen
 import com.example.paryavaran_kavalu.viewmodel.ReportViewModel
 import com.example.paryavaran_kavalu.viewmodel.UserRole
-import com.example.paryavaran_kavalu.viewmodel.WasteReport
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -40,11 +37,11 @@ fun HomeScreen(
     onNavigateToList: () -> Unit,
     onNavigateToDetail: (String) -> Unit
 ) {
-    val reports by viewModel.reports.collectAsState()
+    val reports by viewModel.allReports.collectAsState()
     val userRole by viewModel.userRole.collectAsState()
     
-    val pendingCount = reports.count { it.status == ReportStatus.PENDING }
-    val cleanedCount = reports.count { it.status == ReportStatus.CLEANED }
+    val pendingCount = reports.count { it.status == "Pending" }
+    val cleanedCount = reports.count { it.status == "Cleaned" }
     val ecoKarmaPoints = 1240 
 
     Scaffold(
@@ -73,7 +70,6 @@ fun HomeScreen(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Role Selector (In case TopBar is too crowded, but I'll put it here for clarity)
             item {
                 RoleSelector(
                     currentRole = userRole,
@@ -81,12 +77,10 @@ fun HomeScreen(
                 )
             }
 
-            // Eco-Karma Card
             item {
                 EcoKarmaCard(points = ecoKarmaPoints)
             }
 
-            // Stats row
             item {
                 Text(
                     text = "Your Impact",
@@ -113,13 +107,12 @@ fun HomeScreen(
                         icon = Icons.Default.CheckCircle,
                         label = "Cleaned",
                         value = cleanedCount.toString(),
-                        iconTint = CleanedGreen, // Custom status green
+                        iconTint = CleanedGreen,
                         iconBackground = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
                     )
                 }
             }
 
-            // Quick actions
             item {
                 Text(
                     text = "Quick Actions",
@@ -147,7 +140,6 @@ fun HomeScreen(
                 }
             }
 
-            // Recent reports
             item {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -169,7 +161,7 @@ fun HomeScreen(
                 }
             }
             items(reports.takeLast(3).reversed()) { report ->
-                ReportSummaryCard(report = report, onClick = { onNavigateToDetail(report.id) })
+                ReportSummaryCard(report = report, onClick = { onNavigateToDetail(report.id.toString()) })
             }
         }
     }
@@ -337,7 +329,6 @@ private fun EcoKarmaCard(points: Int) {
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Progress bar toward next level
                 Column(modifier = Modifier.fillMaxWidth()) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -406,7 +397,7 @@ private fun StatCard(
             Spacer(modifier = Modifier.height(12.dp))
             Text(
                 text = value,
-                style = MaterialTheme.typography.headlineMedium.copy(
+                style = MaterialTheme.typography.headlineSmall.copy(
                     fontWeight = FontWeight.ExtraBold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
@@ -447,7 +438,7 @@ private fun QuickActionCard(
 }
 
 @Composable
-private fun ReportSummaryCard(report: WasteReport, onClick: () -> Unit) {
+private fun ReportSummaryCard(report: ReportEntity, onClick: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -460,17 +451,16 @@ private fun ReportSummaryCard(report: WasteReport, onClick: () -> Unit) {
             modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Color dot
             Box(
                 modifier = Modifier
                     .size(12.dp)
                     .clip(CircleShape)
-                    .background(if (report.status == ReportStatus.PENDING) PendingRed else CleanedGreen)
+                    .background(if (report.status == "Pending") MaterialTheme.colorScheme.error else CleanedGreen)
             )
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = report.wasteType.label,
+                    text = report.wasteType,
                     style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
                     color = MaterialTheme.colorScheme.onSurface
                 )

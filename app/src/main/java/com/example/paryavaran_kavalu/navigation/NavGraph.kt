@@ -17,7 +17,8 @@ import com.example.paryavaran_kavalu.viewmodel.ReportViewModel
 
 @Composable
 fun NavGraph(navController: NavHostController) {
-    val viewModel: ReportViewModel = viewModel()
+    // Correctly initialize ViewModel using the Factory
+    val viewModel: ReportViewModel = viewModel(factory = ReportViewModel.Factory)
 
     NavHost(
         navController = navController,

@@ -1,5 +1,8 @@
 package com.example.paryavaran_kavalu.ui.screens.report
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -18,12 +21,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.paryavaran_kavalu.ui.theme.*
 import com.example.paryavaran_kavalu.viewmodel.ReportViewModel
-import com.example.paryavaran_kavalu.viewmodel.WasteReport
 import com.example.paryavaran_kavalu.viewmodel.WasteType
 import java.util.UUID
 
@@ -32,11 +33,18 @@ fun NewReportScreen(
     viewModel: ReportViewModel,
     onNavigateBack: () -> Unit = {}
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     var selectedWasteType by remember { mutableStateOf<WasteType?>(null) }
     var description by remember { mutableStateOf("") }
-    var imageAttached by remember { mutableStateOf(false) }
+    var imageUri by remember { mutableStateOf<Uri?>(null) }
     var dropdownExpanded by remember { mutableStateOf(false) }
     var submitted by remember { mutableStateOf(false) }
+
+    val photoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        imageUri = uri
+    }
 
     if (submitted) {
         ReportSuccessDialog(onDismiss = onNavigateBack)
@@ -58,13 +66,10 @@ fun NewReportScreen(
         ) {
             Spacer(modifier = Modifier.height(4.dp))
 
-            // Step Indicator
             StepIndicator(currentStep = if (selectedWasteType == null) 1 else if (description.isEmpty()) 2 else 3)
 
-            // Info Banner
             InfoBanner()
 
-            // Section: Waste Type
             SectionLabel(text = "Waste Type", required = true)
             WasteTypeDropdown(
                 selectedWasteType = selectedWasteType,
@@ -76,39 +81,36 @@ fun NewReportScreen(
                 }
             )
 
-            // Section: Description
             SectionLabel(text = "Description", required = false)
             DescriptionField(
                 value = description,
                 onValueChange = { description = it }
             )
 
-            // Section: Photo Evidence
             SectionLabel(text = "Photo Evidence", required = false)
             ImageUploadSection(
-                imageAttached = imageAttached,
-                onUploadClick = { imageAttached = !imageAttached }
+                imageAttached = imageUri != null,
+                onUploadClick = { 
+                    if (imageUri == null) photoPickerLauncher.launch("image/*")
+                    else imageUri = null
+                }
             )
 
-            // Section: Location
             SectionLabel(text = "Location", required = true)
             LocationStatusCard()
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Submit Button
             SubmitButton(
                 enabled = selectedWasteType != null,
                 onClick = {
                     selectedWasteType?.let { type ->
                         viewModel.addReport(
-                            WasteReport(
-                                id = UUID.randomUUID().toString(),
-                                wasteType = type,
-                                description = description.ifBlank { "No description provided." },
-                                latitude = 12.9716,
-                                longitude = 77.5946
-                            )
+                            wasteType = type.label,
+                            description = description.ifBlank { "No description provided." },
+                            imageUri = imageUri?.toString() ?: "",
+                            latitude = 12.9716,
+                            longitude = 77.5946
                         )
                         submitted = true
                     }
@@ -323,7 +325,6 @@ private fun ImageUploadSection(
     onUploadClick: () -> Unit
 ) {
     if (!imageAttached) {
-        // Upload Prompt
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -370,7 +371,6 @@ private fun ImageUploadSection(
             }
         }
     } else {
-        // Image "Attached" Placeholder State
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -392,7 +392,6 @@ private fun ImageUploadSection(
                     style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
                 )
             }
-            // Remove button top-right
             Box(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
@@ -412,7 +411,6 @@ private fun ImageUploadSection(
             }
         }
 
-        // Success badge
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(top = 4.dp)

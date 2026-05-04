@@ -18,11 +18,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.paryavaran_kavalu.data.local.entity.ReportEntity
 import com.example.paryavaran_kavalu.ui.theme.*
-import com.example.paryavaran_kavalu.viewmodel.ReportStatus
 import com.example.paryavaran_kavalu.viewmodel.ReportViewModel
 import com.example.paryavaran_kavalu.viewmodel.UserRole
-import com.example.paryavaran_kavalu.viewmodel.WasteReport
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -31,9 +30,9 @@ fun ReportDetailScreen(
     viewModel: ReportViewModel,
     onBack: () -> Unit = {}
 ) {
-    val reports by viewModel.reports.collectAsState()
+    val reports by viewModel.allReports.collectAsState()
     val userRole by viewModel.userRole.collectAsState()
-    val report = reports.find { it.id == reportId }
+    val report = reports.find { it.id.toString() == reportId }
 
     if (report == null) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -66,29 +65,25 @@ fun ReportDetailScreen(
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
         ) {
-            // ── Image placeholder ─────────────────────────────────────────────
             ReportImagePlaceholder()
 
-            // ── Content ───────────────────────────────────────────────────────
             Column(
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Status badge + waste type
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = report.wasteType.label,
+                        text = report.wasteType,
                         style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
                         color = MaterialTheme.colorScheme.onBackground
                     )
                     StatusBadge(status = report.status)
                 }
 
-                // Description card
                 DetailCard(icon = Icons.Filled.Description, title = "Description") {
                     Text(
                         text = report.description,
@@ -97,7 +92,6 @@ fun ReportDetailScreen(
                     )
                 }
 
-                // Location card
                 DetailCard(icon = Icons.Filled.LocationOn, title = "Location") {
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         CoordinateRow(label = "Latitude", value = "%.6f".format(report.latitude))
@@ -105,11 +99,10 @@ fun ReportDetailScreen(
                     }
                 }
 
-                // Conditional Rendering based on Role
                 if (userRole == UserRole.VOLUNTEER) {
-                    if (report.status == ReportStatus.PENDING) {
+                    if (report.status == "Pending") {
                         Button(
-                            onClick = { viewModel.markAsCleaned(report.id) },
+                            onClick = { viewModel.markAsCleaned(report) },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(52.dp),
@@ -126,7 +119,6 @@ fun ReportDetailScreen(
                             )
                         }
                     } else {
-                        // Already cleaned state
                         OutlinedButton(
                             onClick = {},
                             enabled = false,
@@ -148,7 +140,6 @@ fun ReportDetailScreen(
                         }
                     }
                 } else {
-                    // Citizen view - inform them that volunteers will clean this
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         colors = CardDefaults.cardColors(
@@ -162,7 +153,7 @@ fun ReportDetailScreen(
                         ) {
                             Icon(Icons.Filled.Info, null, tint = MaterialTheme.colorScheme.onSecondaryContainer)
                             Text(
-                                text = if (report.status == ReportStatus.PENDING) 
+                                text = if (report.status == "Pending") 
                                     "Volunteers have been notified to clean this spot." 
                                 else "Thank you for reporting! This spot has been cleaned.",
                                 style = MaterialTheme.typography.bodySmall,
@@ -203,10 +194,11 @@ private fun ReportImagePlaceholder() {
 }
 
 @Composable
-private fun StatusBadge(status: ReportStatus) {
+private fun StatusBadge(status: String) {
     val (label, bgColor, textColor) = when (status) {
-        ReportStatus.PENDING -> Triple("● Pending", MaterialTheme.colorScheme.errorContainer, MaterialTheme.colorScheme.error)
-        ReportStatus.CLEANED -> Triple("✓ Cleaned", CleanedGreen.copy(alpha = 0.15f), CleanedGreen)
+        "Pending" -> Triple("● Pending", MaterialTheme.colorScheme.errorContainer, MaterialTheme.colorScheme.error)
+        "Cleaned" -> Triple("✓ Cleaned", CleanedGreen.copy(alpha = 0.15f), CleanedGreen)
+        else -> Triple("Unknown", Color.Gray.copy(alpha = 0.15f), Color.Gray)
     }
     Box(
         modifier = Modifier
