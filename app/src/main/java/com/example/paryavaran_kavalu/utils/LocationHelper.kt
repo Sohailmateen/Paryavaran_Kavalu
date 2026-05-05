@@ -15,10 +15,18 @@ class LocationHelper(context: Context) {
 
     /** 
      * Get current GPS coordinates. 
-     * Requires Manifest.permission.ACCESS_FINE_LOCATION or ACCESS_COARSE_LOCATION.
+     * Tries to get last known location first for speed, then requests a fresh one.
      */
     @SuppressLint("MissingPermission")
     fun getCurrentLocation(onLocationResult: (latitude: Double, longitude: Double) -> Unit) {
+        // Try last known location first for immediate result
+        fusedLocationClient.lastLocation.addOnSuccessListener { location: Location? ->
+            location?.let {
+                onLocationResult(it.latitude, it.longitude)
+            }
+        }
+
+        // Also request fresh location
         fusedLocationClient.getCurrentLocation(
             Priority.PRIORITY_HIGH_ACCURACY,
             CancellationTokenSource().token

@@ -23,6 +23,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.paryavaran_kavalu.utils.LocationHelper
 import com.example.paryavaran_kavalu.ui.theme.*
 import com.example.paryavaran_kavalu.viewmodel.ReportViewModel
 import com.example.paryavaran_kavalu.viewmodel.WasteType
@@ -31,19 +32,38 @@ import java.util.UUID
 @Composable
 fun NewReportScreen(
     viewModel: ReportViewModel,
+    lat: Double? = null,
+    lng: Double? = null,
     onNavigateBack: () -> Unit = {}
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
+    val locationHelper = remember { LocationHelper(context) }
+    
     var selectedWasteType by remember { mutableStateOf<WasteType?>(null) }
     var description by remember { mutableStateOf("") }
     var imageUri by remember { mutableStateOf<Uri?>(null) }
     var dropdownExpanded by remember { mutableStateOf(false) }
     var submitted by remember { mutableStateOf(false) }
 
+    var currentLat by remember { mutableStateOf(lat) }
+    var currentLng by remember { mutableStateOf(lng) }
+    var isFetchingLocation by remember { mutableStateOf(lat == null) }
+
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         imageUri = uri
+    }
+
+    // Fetch location if not provided
+    LaunchedEffect(Unit) {
+        if (currentLat == null) {
+            locationHelper.getCurrentLocation { l, ln ->
+                currentLat = l
+                currentLng = ln
+                isFetchingLocation = false
+            }
+        }
     }
 
     if (submitted) {
@@ -97,20 +117,25 @@ fun NewReportScreen(
             )
 
             SectionLabel(text = "Location", required = true)
-            LocationStatusCard()
+            LocationStatusCard(
+                latitude = currentLat,
+                longitude = currentLng,
+                isFetching = isFetchingLocation
+            )
 
             Spacer(modifier = Modifier.height(8.dp))
 
+            // Submit Button
             SubmitButton(
-                enabled = selectedWasteType != null,
+                enabled = selectedWasteType != null && currentLat != null,
                 onClick = {
                     selectedWasteType?.let { type ->
                         viewModel.addReport(
                             wasteType = type.label,
                             description = description.ifBlank { "No description provided." },
                             imageUri = imageUri?.toString() ?: "",
-                            latitude = 12.9716,
-                            longitude = 77.5946
+                            latitude = currentLat ?: 0.0,
+                            longitude = currentLng ?: 0.0
                         )
                         submitted = true
                     }
@@ -431,7 +456,11 @@ private fun ImageUploadSection(
 }
 
 @Composable
-private fun LocationStatusCard() {
+private fun LocationStatusCard(
+    latitude: Double? = null,
+    longitude: Double? = null,
+    isFetching: Boolean = false
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
@@ -459,24 +488,35 @@ private fun LocationStatusCard() {
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Fetching location...",
+                    text = if (isFetching) "Fetching location..." else if (latitude != null) "Location Tagged" else "Location access needed",
                     style = MaterialTheme.typography.bodyMedium.copy(
                         fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                 )
                 Text(
-                    text = "GPS coordinates will be auto-tagged",
+                    text = if (latitude != null && longitude != null) 
+                        "%.4f, %.4f".format(latitude, longitude)
+                    else "GPS coordinates will be auto-tagged",
                     style = MaterialTheme.typography.bodySmall.copy(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 )
             }
-            CircularProgressIndicator(
-                modifier = Modifier.size(20.dp),
-                strokeWidth = 2.dp,
-                color = MaterialTheme.colorScheme.tertiary
-            )
+            if (isFetching) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(20.dp),
+                    strokeWidth = 2.dp,
+                    color = MaterialTheme.colorScheme.tertiary
+                )
+            } else if (latitude != null) {
+                Icon(
+                    imageVector = Icons.Default.CheckCircle,
+                    contentDescription = "Ready",
+                    tint = CleanedGreen,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
         }
     }
 }
@@ -520,7 +560,7 @@ private fun SubmitButton(
 
     if (!enabled) {
         Text(
-            text = "Please select a waste type to submit",
+            text = "Please select a waste type and ensure location is tagged.",
             style = MaterialTheme.typography.labelSmall.copy(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             ),

@@ -46,17 +46,33 @@ fun NavGraph(navController: NavHostController) {
             )
         }
 
-        composable(Routes.REPORT) {
+        composable(
+            route = Routes.REPORT,
+            arguments = listOf(
+                navArgument("lat") { type = NavType.StringType; nullable = true },
+                navArgument("lng") { type = NavType.StringType; nullable = true }
+            )
+        ) { backStackEntry ->
+            val lat = backStackEntry.arguments?.getString("lat")?.toDoubleOrNull()
+            val lng = backStackEntry.arguments?.getString("lng")?.toDoubleOrNull()
             NewReportScreen(
                 viewModel = viewModel,
+                lat = lat,
+                lng = lng,
                 onNavigateBack = { navController.popBackStack() }
             )
         }
 
         composable(Routes.MAP) {
             MapScreen(
-                onNavigateToReport = { navController.navigate(Routes.REPORT) },
-                onBack = { navController.popBackStack() }
+                viewModel = viewModel,
+                onNavigateToReport = { lat, lng -> 
+                    navController.navigate(Routes.reportRoute(lat, lng))
+                },
+                onBack = { navController.popBackStack() },
+                onMarkerClick = { reportId ->
+                    navController.navigate(Routes.detailRoute(reportId))
+                }
             )
         }
 
