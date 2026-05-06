@@ -13,5 +13,6 @@ data class ReportEntity(
     val latitude: Double,
     val longitude: Double,
     val status: String, // "Pending" or "Cleaned"
-    val timestamp: Long
+    val timestamp: Long,
+    val cleanedImageUri: String = ""
 )

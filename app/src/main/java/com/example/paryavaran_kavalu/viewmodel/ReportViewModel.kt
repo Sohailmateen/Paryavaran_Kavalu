@@ -90,9 +90,12 @@ class ReportViewModel(private val repository: ReportRepository) : ViewModel() {
         }
     }
 
-    fun markAsCleaned(report: ReportEntity) {
+    fun markAsCleaned(report: ReportEntity, cleanedImageUri: String = "") {
         viewModelScope.launch {
-            val updatedReport = report.copy(status = "Cleaned")
+            val updatedReport = report.copy(
+                status = "Cleaned",
+                cleanedImageUri = cleanedImageUri
+            )
             repository.updateReport(updatedReport)
         }
     }

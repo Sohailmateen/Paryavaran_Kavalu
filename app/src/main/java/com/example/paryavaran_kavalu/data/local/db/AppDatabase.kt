@@ -6,7 +6,7 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.example.paryavaran_kavalu.data.local.entity.ReportEntity
 
-@Database(entities = [ReportEntity::class], version = 1, exportSchema = false)
+@Database(entities = [ReportEntity::class], version = 2, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun reportDao(): ReportDao
@@ -21,7 +21,8 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "paryavaran_database"
-                ).build()
+                ).fallbackToDestructiveMigration()
+                    .build()
                 INSTANCE = instance
                 instance
             }

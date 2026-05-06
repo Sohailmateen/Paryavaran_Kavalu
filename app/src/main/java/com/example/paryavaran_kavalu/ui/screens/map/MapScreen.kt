@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.example.paryavaran_kavalu.utils.LocationHelper
 import com.example.paryavaran_kavalu.viewmodel.ReportViewModel
+import com.example.paryavaran_kavalu.viewmodel.UserRole
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
@@ -34,6 +35,7 @@ fun MapScreen(
 ) {
     val context = LocalContext.current
     val reports by viewModel.allReports.collectAsState()
+    val userRole by viewModel.userRole.collectAsState()
     val locationHelper = remember { LocationHelper(context) }
     
     val bangalore = LatLng(12.9716, 77.5946)
@@ -94,27 +96,16 @@ fun MapScreen(
             )
         },
         floatingActionButton = {
-            Column(horizontalAlignment = Alignment.End) {
-                if (selectedLocation != null) {
-                    ExtendedFloatingActionButton(
-                        onClick = { 
-                            onNavigateToReport(selectedLocation?.latitude, selectedLocation?.longitude)
-                        },
-                        icon = { Icon(Icons.Default.Add, null) },
-                        text = { Text("Report Here") },
-                        containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
-                        modifier = Modifier.padding(bottom = 16.dp)
-                    )
-                }
-                
-                FloatingActionButton(
-                    onClick = { onNavigateToReport(null, null) },
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary
-                ) {
-                    Icon(imageVector = Icons.Default.Add, contentDescription = "Add Report")
-                }
+            if (userRole == UserRole.CITIZEN && selectedLocation != null) {
+                ExtendedFloatingActionButton(
+                    onClick = { 
+                        onNavigateToReport(selectedLocation?.latitude, selectedLocation?.longitude)
+                    },
+                    icon = { Icon(Icons.Default.Add, null) },
+                    text = { Text("Report Here") },
+                    containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                )
             }
         }
     ) { innerPadding ->
@@ -125,7 +116,9 @@ fun MapScreen(
                 uiSettings = uiSettings,
                 properties = properties,
                 onMapClick = { latLng ->
-                    selectedLocation = latLng
+                    if (userRole == UserRole.CITIZEN) {
+                        selectedLocation = latLng
+                    }
                 }
             ) {
                 reports.forEach { report ->
@@ -154,7 +147,7 @@ fun MapScreen(
                 }
             }
 
-            if (selectedLocation == null) {
+            if (userRole == UserRole.CITIZEN && selectedLocation == null) {
                 Surface(
                     modifier = Modifier
                         .align(Alignment.TopCenter)
