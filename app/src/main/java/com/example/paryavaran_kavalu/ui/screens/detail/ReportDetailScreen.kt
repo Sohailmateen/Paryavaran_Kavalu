@@ -18,6 +18,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
+import androidx.compose.ui.layout.ContentScale
 import com.example.paryavaran_kavalu.data.local.entity.ReportEntity
 import com.example.paryavaran_kavalu.ui.theme.*
 import com.example.paryavaran_kavalu.viewmodel.ReportViewModel
@@ -65,7 +67,19 @@ fun ReportDetailScreen(
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
         ) {
-            ReportImagePlaceholder()
+            if (report.imageUri.isNotEmpty()) {
+                AsyncImage(
+                    model = report.imageUri,
+                    contentDescription = "Waste Image",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(250.dp)
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                ReportImagePlaceholder()
+            }
 
             Column(
                 modifier = Modifier.padding(16.dp),
@@ -209,7 +223,9 @@ private fun StatusBadge(status: String) {
         Text(
             text = label,
             style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-            color = textColor
+            color = textColor,
+            maxLines = 1,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
         )
     }
 }

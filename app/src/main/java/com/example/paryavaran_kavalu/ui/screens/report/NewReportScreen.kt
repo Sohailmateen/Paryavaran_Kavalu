@@ -15,20 +15,25 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.example.paryavaran_kavalu.utils.LocationHelper
 import com.example.paryavaran_kavalu.ui.theme.*
 import com.example.paryavaran_kavalu.viewmodel.ReportViewModel
 import com.example.paryavaran_kavalu.viewmodel.WasteType
-import java.util.UUID
+import com.example.paryavaran_kavalu.utils.ImageHelper
+import kotlinx.coroutines.delay
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NewReportScreen(
     viewModel: ReportViewModel,
@@ -39,31 +44,86 @@ fun NewReportScreen(
     val context = androidx.compose.ui.platform.LocalContext.current
     val locationHelper = remember { LocationHelper(context) }
     
-    var selectedWasteType by remember { mutableStateOf<WasteType?>(null) }
-    var description by remember { mutableStateOf("") }
-    var imageUri by remember { mutableStateOf<Uri?>(null) }
+    // Using rememberSaveable to survive process death/recreation
+    var selectedWasteTypeName by rememberSaveable { mutableStateOf<String?>(null) }
+    val selectedWasteType = selectedWasteTypeName?.let { name -> WasteType.valueOf(name) }
+    
+    var description by rememberSaveable { mutableStateOf("") }
+    var imageUriString by rememberSaveable { mutableStateOf<String?>(null) }
+    val imageUri = imageUriString?.let { Uri.parse(it) }
+    
     var dropdownExpanded by remember { mutableStateOf(false) }
     var submitted by remember { mutableStateOf(false) }
 
-    var currentLat by remember { mutableStateOf(lat) }
-    var currentLng by remember { mutableStateOf(lng) }
-    var isFetchingLocation by remember { mutableStateOf(lat == null) }
+    var currentLat by rememberSaveable { mutableStateOf(lat) }
+    var currentLng by rememberSaveable { mutableStateOf(lng) }
+    var isFetchingLocation by rememberSaveable { mutableStateOf(lat == null) }
+    var locationError by rememberSaveable { mutableStateOf<String?>(null) }
+
+    var showImageSourceDialog by rememberSaveable { mutableStateOf(false) }
+    var tempCameraUri by rememberSaveable { mutableStateOf<String?>(null) }
 
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
-        imageUri = uri
+        uri?.let {
+            // Save to internal storage immediately so it's visible in details later
+            val savedPath = ImageHelper.saveImageToInternalStorage(context, it)
+            imageUriString = savedPath
+        }
+    }
+
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture()
+    ) { success ->
+        if (success && tempCameraUri != null) {
+            // Save to internal storage permanently
+            val savedPath = ImageHelper.saveImageToInternalStorage(context, Uri.parse(tempCameraUri!!))
+            imageUriString = savedPath
+        }
     }
 
     // Fetch location if not provided
     LaunchedEffect(Unit) {
         if (currentLat == null) {
-            locationHelper.getCurrentLocation { l, ln ->
-                currentLat = l
-                currentLng = ln
+            try {
+                locationHelper.getCurrentLocation { l, ln ->
+                    currentLat = l
+                    currentLng = ln
+                    isFetchingLocation = false
+                }
+                delay(15000)
+                if (currentLat == null) {
+                    isFetchingLocation = false
+                    locationError = "Location timeout. Please try again."
+                }
+            } catch (e: Exception) {
                 isFetchingLocation = false
+                locationError = "Failed to access GPS."
             }
         }
+    }
+
+    if (showImageSourceDialog) {
+        AlertDialog(
+            onDismissRequest = { showImageSourceDialog = false },
+            title = { Text("Select Image Source") },
+            text = { Text("Choose how you want to upload the photo.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showImageSourceDialog = false
+                    photoPickerLauncher.launch("image/*")
+                }) { Text("Gallery") }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showImageSourceDialog = false
+                    val uri = ImageHelper.getTempImageUri(context)
+                    tempCameraUri = uri.toString()
+                    cameraLauncher.launch(uri)
+                }) { Text("Camera") }
+            }
+        )
     }
 
     if (submitted) {
@@ -96,7 +156,7 @@ fun NewReportScreen(
                 expanded = dropdownExpanded,
                 onExpandedChange = { dropdownExpanded = it },
                 onWasteTypeSelected = {
-                    selectedWasteType = it
+                    selectedWasteTypeName = it.name
                     dropdownExpanded = false
                 }
             )
@@ -109,10 +169,10 @@ fun NewReportScreen(
 
             SectionLabel(text = "Photo Evidence", required = false)
             ImageUploadSection(
-                imageAttached = imageUri != null,
+                imageUri = imageUri,
                 onUploadClick = { 
-                    if (imageUri == null) photoPickerLauncher.launch("image/*")
-                    else imageUri = null
+                    if (imageUri == null) showImageSourceDialog = true
+                    else imageUriString = null
                 }
             )
 
@@ -120,7 +180,8 @@ fun NewReportScreen(
             LocationStatusCard(
                 latitude = currentLat,
                 longitude = currentLng,
-                isFetching = isFetchingLocation
+                isFetching = isFetchingLocation,
+                error = locationError
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -133,7 +194,7 @@ fun NewReportScreen(
                         viewModel.addReport(
                             wasteType = type.label,
                             description = description.ifBlank { "No description provided." },
-                            imageUri = imageUri?.toString() ?: "",
+                            imageUri = imageUriString ?: "",
                             latitude = currentLat ?: 0.0,
                             longitude = currentLng ?: 0.0
                         )
@@ -178,7 +239,9 @@ private fun ReportTopBar(onNavigateBack: () -> Unit) {
             }
         },
         colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.primary
+            containerColor = MaterialTheme.colorScheme.primary,
+            titleContentColor = MaterialTheme.colorScheme.onPrimary,
+            navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
         )
     )
 }
@@ -249,24 +312,13 @@ private fun WasteTypeDropdown(
             value = selectedWasteType?.label ?: "",
             onValueChange = {},
             readOnly = true,
-            placeholder = {
-                Text(
-                    text = "Select waste category",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            },
-            trailingIcon = {
-                ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .menuAnchor(),
+            placeholder = { Text("Select waste category") },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            modifier = Modifier.fillMaxWidth().menuAnchor(),
             shape = RoundedCornerShape(12.dp),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = MaterialTheme.colorScheme.primary,
-                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                focusedContainerColor = MaterialTheme.colorScheme.surface
+                unfocusedBorderColor = MaterialTheme.colorScheme.outline
             )
         )
 
@@ -276,27 +328,8 @@ private fun WasteTypeDropdown(
         ) {
             WasteType.entries.forEach { type ->
                 DropdownMenuItem(
-                    text = {
-                        Text(
-                            text = type.label,
-                            style = MaterialTheme.typography.bodyMedium.copy(
-                                color = if (type == selectedWasteType) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-                                fontWeight = if (type == selectedWasteType)
-                                    FontWeight.SemiBold else FontWeight.Normal
-                            )
-                        )
-                    },
-                    onClick = { onWasteTypeSelected(type) },
-                    trailingIcon = {
-                        if (type == selectedWasteType) {
-                            Icon(
-                                imageVector = Icons.Default.Check,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-                    }
+                    text = { Text(type.label) },
+                    onClick = { onWasteTypeSelected(type) }
                 )
             }
         }
@@ -346,10 +379,10 @@ private fun DescriptionField(
 
 @Composable
 private fun ImageUploadSection(
-    imageAttached: Boolean,
+    imageUri: Uri?,
     onUploadClick: () -> Unit
 ) {
-    if (!imageAttached) {
+    if (imageUri == null) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -404,19 +437,12 @@ private fun ImageUploadSection(
                 .background(MaterialTheme.colorScheme.surfaceVariant),
             contentAlignment = Alignment.Center
         ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Icon(
-                    imageVector = Icons.Default.Image,
-                    contentDescription = "Preview",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(48.dp)
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "waste_photo_001.jpg",
-                    style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
-                )
-            }
+            AsyncImage(
+                model = imageUri,
+                contentDescription = "Preview",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
             Box(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
@@ -459,7 +485,8 @@ private fun ImageUploadSection(
 private fun LocationStatusCard(
     latitude: Double? = null,
     longitude: Double? = null,
-    isFetching: Boolean = false
+    isFetching: Boolean = false,
+    error: String? = null
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -475,29 +502,37 @@ private fun LocationStatusCard(
                 modifier = Modifier
                     .size(40.dp)
                     .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.tertiaryContainer),
+                    .background(
+                        if (error != null) MaterialTheme.colorScheme.errorContainer
+                        else MaterialTheme.colorScheme.tertiaryContainer
+                    ),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = Icons.Default.LocationOn,
+                    imageVector = if (error != null) Icons.Default.Error else Icons.Default.LocationOn,
                     contentDescription = "Location",
-                    tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                    tint = if (error != null) MaterialTheme.colorScheme.error 
+                          else MaterialTheme.colorScheme.onTertiaryContainer,
                     modifier = Modifier.size(22.dp)
                 )
             }
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = if (isFetching) "Fetching location..." else if (latitude != null) "Location Tagged" else "Location access needed",
+                    text = if (error != null) "Location Error" 
+                           else if (isFetching) "Fetching location..." 
+                           else if (latitude != null) "Location Tagged" 
+                           else "Location access needed",
                     style = MaterialTheme.typography.bodyMedium.copy(
                         fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = if (error != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
                     )
                 )
                 Text(
-                    text = if (latitude != null && longitude != null) 
-                        "%.4f, %.4f".format(latitude, longitude)
-                    else "GPS coordinates will be auto-tagged",
+                    text = if (error != null) error
+                           else if (latitude != null && longitude != null) 
+                                "%.4f, %.4f".format(latitude, longitude)
+                           else "GPS coordinates will be auto-tagged",
                     style = MaterialTheme.typography.bodySmall.copy(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -509,7 +544,7 @@ private fun LocationStatusCard(
                     strokeWidth = 2.dp,
                     color = MaterialTheme.colorScheme.tertiary
                 )
-            } else if (latitude != null) {
+            } else if (latitude != null && error == null) {
                 Icon(
                     imageVector = Icons.Default.CheckCircle,
                     contentDescription = "Ready",

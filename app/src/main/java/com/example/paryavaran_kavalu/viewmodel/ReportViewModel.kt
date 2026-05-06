@@ -3,6 +3,8 @@ package com.example.paryavaran_kavalu.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.ViewModelProvider
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import androidx.lifecycle.viewmodel.CreationExtras
 import com.example.paryavaran_kavalu.ParyavaranApp
 import com.example.paryavaran_kavalu.data.local.entity.ReportEntity
@@ -50,6 +52,18 @@ class ReportViewModel(private val repository: ReportRepository) : ViewModel() {
 
     private val _userRole = MutableStateFlow(UserRole.CITIZEN)
     val userRole: StateFlow<UserRole> = _userRole.asStateFlow()
+
+    val ecoKarmaPoints: StateFlow<Int> = combine(repository.allReports, _userRole) { reports, role ->
+        if (role == UserRole.VOLUNTEER) {
+            reports.count { it.status == "Cleaned" } * 100
+        } else {
+            reports.size * 100
+        }
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = 0
+    )
 
     fun setUserRole(role: UserRole) {
         _userRole.value = role

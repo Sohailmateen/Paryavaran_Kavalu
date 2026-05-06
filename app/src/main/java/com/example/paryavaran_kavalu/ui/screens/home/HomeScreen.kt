@@ -39,10 +39,10 @@ fun HomeScreen(
 ) {
     val reports by viewModel.allReports.collectAsState()
     val userRole by viewModel.userRole.collectAsState()
+    val ecoKarmaPoints by viewModel.ecoKarmaPoints.collectAsState()
     
     val pendingCount = reports.count { it.status == "Pending" }
     val cleanedCount = reports.count { it.status == "Cleaned" }
-    val ecoKarmaPoints = 1240 
 
     Scaffold(
         topBar = {
@@ -53,13 +53,15 @@ fun HomeScreen(
             )
         },
         floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = onNavigateToReport,
-                icon = { Icon(Icons.Filled.Add, "Add") },
-                text = { Text("Report Waste") },
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary
-            )
+            if (userRole == UserRole.CITIZEN) {
+                ExtendedFloatingActionButton(
+                    onClick = onNavigateToReport,
+                    icon = { Icon(Icons.Filled.Add, "Add") },
+                    text = { Text("Report Waste") },
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                )
+            }
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
@@ -335,17 +337,17 @@ private fun EcoKarmaCard(points: Int) {
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(
-                            text = "Next: Eco Warrior",
+                            text = "Next Level",
                             style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onPrimary)
                         )
                         Text(
-                            text = "1240 / 2000",
+                            text = "$points / 5000",
                             style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onPrimary)
                         )
                     }
                     Spacer(modifier = Modifier.height(4.dp))
                     LinearProgressIndicator(
-                        progress = { points / 2000f },
+                        progress = { (points % 5000) / 5000f },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(6.dp)
