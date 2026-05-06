@@ -42,6 +42,8 @@ fun ReportDetailScreen(
     val report = reports.find { it.id.toString() == reportId }
 
     var cleanedImageUriString by remember { mutableStateOf<String?>(null) }
+    var showImageSourceDialog by remember { mutableStateOf(false) }
+    var tempCameraUri by remember { mutableStateOf<String?>(null) }
     
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -52,11 +54,42 @@ fun ReportDetailScreen(
         }
     }
 
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture()
+    ) { success ->
+        if (success && tempCameraUri != null) {
+            val savedPath = ImageHelper.saveImageToInternalStorage(context, Uri.parse(tempCameraUri!!))
+            cleanedImageUriString = savedPath
+        }
+    }
+
     if (report == null) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text("Report not found", color = MaterialTheme.colorScheme.onBackground)
         }
         return
+    }
+
+    if (showImageSourceDialog) {
+        AlertDialog(
+            onDismissRequest = { showImageSourceDialog = false },
+            title = { Text("Select Image Source") },
+            text = { Text("Take a new photo or choose from your gallery.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showImageSourceDialog = false
+                    photoPickerLauncher.launch("image/*")
+                }) { Text("Gallery") }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showImageSourceDialog = false
+                    val uri = ImageHelper.getTempImageUri(context)
+                    tempCameraUri = uri.toString()
+                    cameraLauncher.launch(uri)
+                }) { Text("Camera") }
+            }
+        )
     }
 
     Scaffold(
@@ -165,10 +198,10 @@ fun ReportDetailScreen(
                 if (userRole == UserRole.VOLUNTEER) {
                     if (report.status == "Pending") {
                         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            // Optional Image Picker for Volunteers
+                            // Image Picker for Volunteers
                             if (cleanedImageUriString == null) {
                                 OutlinedButton(
-                                    onClick = { photoPickerLauncher.launch("image/*") },
+                                    onClick = { showImageSourceDialog = true },
                                     modifier = Modifier.fillMaxWidth(),
                                     shape = RoundedCornerShape(16.dp)
                                 ) {
