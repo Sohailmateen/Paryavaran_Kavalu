@@ -131,7 +131,7 @@ fun MapScreen(
                             else BitmapDescriptorFactory.HUE_GREEN
                         ),
                         onClick = {
-                            onMarkerClick(report.id.toString())
+                            onMarkerClick(report.id)
                             false
                         }
                     )

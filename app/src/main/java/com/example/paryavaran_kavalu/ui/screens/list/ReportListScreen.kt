@@ -22,7 +22,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
-import com.example.paryavaran_kavalu.data.local.entity.ReportEntity
+import com.example.paryavaran_kavalu.data.model.Report
 import com.example.paryavaran_kavalu.ui.theme.*
 import com.example.paryavaran_kavalu.viewmodel.ReportViewModel
 
@@ -95,7 +95,7 @@ fun ReportListScreen(
                     items(filteredReports) { report ->
                         ReportListItem(
                             report = report,
-                            onClick = { onNavigateToDetail(report.id.toString()) }
+                            onClick = { onNavigateToDetail(report.id) }
                         )
                     }
                 }
@@ -105,7 +105,7 @@ fun ReportListScreen(
 }
 
 @Composable
-private fun ReportListItem(report: ReportEntity, onClick: () -> Unit) {
+private fun ReportListItem(report: Report, onClick: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -119,9 +119,9 @@ private fun ReportListItem(report: ReportEntity, onClick: () -> Unit) {
             verticalAlignment = Alignment.Top,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            if (report.imageUri.isNotEmpty()) {
+            if (report.imageUrl.isNotEmpty()) {
                 AsyncImage(
-                    model = report.imageUri,
+                    model = report.imageUrl,
                     contentDescription = null,
                     modifier = Modifier
                         .size(80.dp)

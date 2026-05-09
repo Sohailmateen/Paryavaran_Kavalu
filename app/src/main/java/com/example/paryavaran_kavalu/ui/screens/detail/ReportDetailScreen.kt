@@ -23,7 +23,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
-import com.example.paryavaran_kavalu.data.local.entity.ReportEntity
+import com.example.paryavaran_kavalu.data.model.Report
 import com.example.paryavaran_kavalu.ui.theme.*
 import com.example.paryavaran_kavalu.viewmodel.ReportViewModel
 import com.example.paryavaran_kavalu.viewmodel.UserRole
@@ -39,7 +39,8 @@ fun ReportDetailScreen(
     val context = LocalContext.current
     val reports by viewModel.allReports.collectAsState()
     val userRole by viewModel.userRole.collectAsState()
-    val report = reports.find { it.id.toString() == reportId }
+    val uiState by viewModel.uiState.collectAsState()
+    val report = reports.find { it.id == reportId }
 
     var cleanedImageUriString by remember { mutableStateOf<String?>(null) }
     var showImageSourceDialog by remember { mutableStateOf(false) }
@@ -117,9 +118,9 @@ fun ReportDetailScreen(
                 .verticalScroll(rememberScrollState())
         ) {
             Box {
-                if (report.imageUri.isNotEmpty()) {
+                if (report.imageUrl.isNotEmpty()) {
                     AsyncImage(
-                        model = report.imageUri,
+                        model = report.imageUrl,
                         contentDescription = "Waste Image",
                         modifier = Modifier
                             .fillMaxWidth()
@@ -131,7 +132,7 @@ fun ReportDetailScreen(
                     ReportImagePlaceholder()
                 }
 
-                if (report.status == "Cleaned" && report.cleanedImageUri.isNotEmpty()) {
+                if (report.status == "Cleaned" && report.cleanedImageUrl.isNotEmpty()) {
                     Surface(
                         modifier = Modifier
                             .align(Alignment.BottomEnd)
@@ -166,10 +167,10 @@ fun ReportDetailScreen(
                     StatusBadge(status = report.status)
                 }
 
-                if (report.status == "Cleaned" && report.cleanedImageUri.isNotEmpty()) {
+                if (report.status == "Cleaned" && report.cleanedImageUrl.isNotEmpty()) {
                     DetailCard(icon = Icons.Filled.CheckCircle, title = "Cleaned Evidence") {
                         AsyncImage(
-                            model = report.cleanedImageUri,
+                            model = report.cleanedImageUrl,
                             contentDescription = "Cleaned Image",
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -226,21 +227,38 @@ fun ReportDetailScreen(
                                 }
                             }
 
-                            Button(
-                                onClick = { viewModel.markAsCleaned(report, cleanedImageUriString ?: "") },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(52.dp),
-                                shape = RoundedCornerShape(16.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = MaterialTheme.colorScheme.primary
-                                )
-                            ) {
-                                Icon(Icons.Filled.CheckCircle, contentDescription = null)
-                                Spacer(modifier = Modifier.width(8.dp))
+                            if (uiState is com.example.paryavaran_kavalu.viewmodel.ReportUiState.Loading) {
+                                CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+                            } else {
+                                Button(
+                                    onClick = { 
+                                        viewModel.markAsCleaned(
+                                            report.id, 
+                                            cleanedImageUriString?.let { Uri.parse(it) }
+                                        ) 
+                                    },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(52.dp),
+                                    shape = RoundedCornerShape(16.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = MaterialTheme.colorScheme.primary
+                                    )
+                                ) {
+                                    Icon(Icons.Filled.CheckCircle, contentDescription = null)
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = "Mark as Cleaned",
+                                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold)
+                                    )
+                                }
+                            }
+
+                            if (uiState is com.example.paryavaran_kavalu.viewmodel.ReportUiState.Error) {
                                 Text(
-                                    text = "Mark as Cleaned",
-                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold)
+                                    text = (uiState as com.example.paryavaran_kavalu.viewmodel.ReportUiState.Error).message,
+                                    color = MaterialTheme.colorScheme.error,
+                                    style = MaterialTheme.typography.labelSmall
                                 )
                             }
                         }

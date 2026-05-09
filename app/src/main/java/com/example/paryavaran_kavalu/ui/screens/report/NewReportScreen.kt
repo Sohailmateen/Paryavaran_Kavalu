@@ -43,6 +43,8 @@ fun NewReportScreen(
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val locationHelper = remember { LocationHelper(context) }
+    val userRole by viewModel.userRole.collectAsState()
+    val uiState by viewModel.uiState.collectAsState()
     
     // Using rememberSaveable to survive process death/recreation
     var selectedWasteTypeName by rememberSaveable { mutableStateOf<String?>(null) }
@@ -126,8 +128,11 @@ fun NewReportScreen(
         )
     }
 
-    if (submitted) {
-        ReportSuccessDialog(onDismiss = onNavigateBack)
+    if (uiState is com.example.paryavaran_kavalu.viewmodel.ReportUiState.Success) {
+        ReportSuccessDialog(onDismiss = {
+            viewModel.resetUiState()
+            onNavigateBack()
+        })
     }
 
     Scaffold(
@@ -187,21 +192,34 @@ fun NewReportScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             // Submit Button
-            SubmitButton(
-                enabled = selectedWasteType != null && currentLat != null,
-                onClick = {
-                    selectedWasteType?.let { type ->
-                        viewModel.addReport(
-                            wasteType = type.label,
-                            description = description.ifBlank { "No description provided." },
-                            imageUri = imageUriString ?: "",
-                            latitude = currentLat ?: 0.0,
-                            longitude = currentLng ?: 0.0
-                        )
-                        submitted = true
+            if (uiState is com.example.paryavaran_kavalu.viewmodel.ReportUiState.Loading) {
+                CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+            } else {
+                SubmitButton(
+                    enabled = selectedWasteType != null && currentLat != null,
+                    onClick = {
+                        selectedWasteType?.let { type ->
+                            viewModel.addReport(
+                                wasteType = type.label,
+                                description = description.ifBlank { "No description provided." },
+                                imageUri = imageUri,
+                                latitude = currentLat ?: 0.0,
+                                longitude = currentLng ?: 0.0,
+                                currentUserRole = userRole.name
+                            )
+                        }
                     }
-                }
-            )
+                )
+            }
+
+            if (uiState is com.example.paryavaran_kavalu.viewmodel.ReportUiState.Error) {
+                Text(
+                    text = (uiState as com.example.paryavaran_kavalu.viewmodel.ReportUiState.Error).message,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                )
+            }
 
             Spacer(modifier = Modifier.height(24.dp))
         }

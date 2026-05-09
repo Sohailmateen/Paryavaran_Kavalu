@@ -7,6 +7,11 @@ object Routes {
     const val MAP = "map"
     const val DETAIL = "detail/{reportId}"
     const val LIST = "list"
+    const val LOGIN = "login"
+    const val REGISTER = "register"
+    const val ROLE_SELECTION = "role_selection"
+    const val PROFILE = "profile"
+    const val EDIT_PROFILE = "edit_profile"
 
     fun detailRoute(reportId: String) = "detail/$reportId"
     fun reportRoute(lat: Double? = null, lng: Double? = null): String {

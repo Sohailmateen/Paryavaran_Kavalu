@@ -1,22 +1,51 @@
 package com.example.paryavaran_kavalu.data.repository
 
-import com.example.paryavaran_kavalu.data.local.db.ReportDao
-import com.example.paryavaran_kavalu.data.local.entity.ReportEntity
+import com.example.paryavaran_kavalu.data.model.Report
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
+import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.tasks.await
 
-class ReportRepository(private val reportDao: ReportDao) {
+class ReportRepository(
+    private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
+) {
+    private val reportsCollection = firestore.collection("reports")
 
-    val allReports: Flow<List<ReportEntity>> = reportDao.getAllReports()
-
-    suspend fun insertReport(report: ReportEntity) {
-        reportDao.insertReport(report)
+    fun getAllReports(): Flow<List<Report>> = callbackFlow {
+        val subscription = reportsCollection
+            .orderBy("timestamp", Query.Direction.DESCENDING)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    close(error)
+                    return@addSnapshotListener
+                }
+                if (snapshot != null) {
+                    val reports = snapshot.documents.mapNotNull { doc ->
+                        doc.toObject(Report::class.java)?.copy(id = doc.id)
+                    }
+                    trySend(reports)
+                }
+            }
+        awaitClose { subscription.remove() }
     }
 
-    suspend fun updateReport(report: ReportEntity) {
-        reportDao.updateReport(report)
+    suspend fun insertReport(report: Report) {
+        reportsCollection.add(report).await()
     }
 
-    suspend fun getReportById(id: Int): ReportEntity? {
-        return reportDao.getReportById(id)
+    suspend fun updateReport(report: Report) {
+        if (report.id.isNotEmpty()) {
+            reportsCollection.document(report.id).set(report).await()
+        }
+    }
+
+    suspend fun markAsCleaned(reportId: String, cleanedImageUrl: String, cleanedBy: String) {
+        reportsCollection.document(reportId).update(
+            "status", "Cleaned",
+            "cleanedImageUrl", cleanedImageUrl,
+            "cleanedBy", cleanedBy
+        ).await()
     }
 }
