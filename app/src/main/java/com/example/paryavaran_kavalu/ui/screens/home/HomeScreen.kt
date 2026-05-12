@@ -38,7 +38,8 @@ fun HomeScreen(
     onNavigateToProfile: () -> Unit,
     onLogout: () -> Unit
 ) {
-    val reports by viewModel.myReports.collectAsState()
+    val myReports by viewModel.myReports.collectAsState()
+    val cleanedReports by viewModel.cleanedReports.collectAsState()
     val allReports by viewModel.allReports.collectAsState()
     val userRole by viewModel.userRole.collectAsState()
     val ecoKarmaPoints by viewModel.userPoints.collectAsState()
@@ -51,12 +52,12 @@ fun HomeScreen(
         viewModel.refreshProfile()
     }
 
-    val pendingCount = if (userRole == UserRole.CITIZEN) {
-        reports.count { it.status == "Pending" }
+    val pendingCount = myReports.count { it.status == "Pending" }
+    val cleanedCount = if (userRole == UserRole.CITIZEN) {
+        myReports.count { it.status == "Cleaned" }
     } else {
-        allReports.count { it.status == "Pending" }
+        cleanedReports.count { it.status == "Cleaned" }
     }
-    val cleanedCount = reports.count { it.status == "Cleaned" }
 
     if (showLogoutDialog) {
         AlertDialog(
@@ -182,7 +183,7 @@ fun HomeScreen(
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
                         color = MaterialTheme.colorScheme.onBackground
                     )
-                    TextButton(onClick = onNavigateToList) {
+                    TextButton(onClick = { onNavigateToList() }) {
                         Text(
                             text = "See All",
                             color = MaterialTheme.colorScheme.primary,
@@ -191,7 +192,7 @@ fun HomeScreen(
                     }
                 }
             }
-            items(reports.take(3)) { report ->
+            items(myReports.take(3)) { report ->
                 ReportSummaryCard(report = report, onClick = { onNavigateToDetail(report.id) })
             }
         }
@@ -473,6 +474,11 @@ private fun ReportSummaryCard(report: Report, onClick: () -> Unit) {
                     text = report.description.take(60) + if (report.description.length > 60) "…" else "",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = "By ${report.reporterName.ifBlank { "User" }}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
                 )
             }
             Icon(Icons.Filled.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)

@@ -12,14 +12,22 @@ import androidx.navigation.compose.rememberNavController
 import com.example.paryavaran_kavalu.navigation.NavGraph
 import com.example.paryavaran_kavalu.ui.theme.Paryavaran_KavaluTheme
 
+import androidx.compose.material3.Surface
+import androidx.compose.material3.MaterialTheme
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
             Paryavaran_KavaluTheme {
-                val navController = rememberNavController()
-                NavGraph(navController = navController)
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    val navController = rememberNavController()
+                    NavGraph(navController = navController)
+                }
             }
         }
     }

@@ -30,10 +30,15 @@ import com.example.paryavaran_kavalu.viewmodel.ReportViewModel
 @Composable
 fun ReportListScreen(
     viewModel: ReportViewModel,
+    showOnlyMyReports: Boolean = false,
     onNavigateToDetail: (String) -> Unit = {},
     onBack: () -> Unit = {}
 ) {
-    val reports by viewModel.allReports.collectAsState()
+    val allReports by viewModel.allReports.collectAsState()
+    val myReports by viewModel.myReports.collectAsState()
+    
+    val reports = if (showOnlyMyReports) myReports else allReports
+    
     var selectedFilter by remember { mutableStateOf("All") }
 
     val filters = listOf("All", "Pending", "Cleaned")
@@ -46,7 +51,13 @@ fun ReportListScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("All Reports (${filteredReports.size})", fontWeight = FontWeight.Bold) },
+                title = { 
+                    Text(
+                        if (showOnlyMyReports) "My Reports (${filteredReports.size})" 
+                        else "All Reports (${filteredReports.size})", 
+                        fontWeight = FontWeight.Bold
+                    ) 
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
@@ -168,6 +179,12 @@ private fun ReportListItem(report: Report, onClick: () -> Unit) {
                     text = "📍 ${"%.4f".format(report.latitude)}, ${"%.4f".format(report.longitude)}",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
+                )
+                
+                Text(
+                    text = "👤 ${report.reporterName.ifBlank { "User" }}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 

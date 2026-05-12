@@ -1,9 +1,11 @@
 package com.example.paryavaran_kavalu.ui.screens.detail
 
+import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -28,6 +30,9 @@ import com.example.paryavaran_kavalu.ui.theme.*
 import com.example.paryavaran_kavalu.viewmodel.ReportViewModel
 import com.example.paryavaran_kavalu.viewmodel.UserRole
 import com.example.paryavaran_kavalu.utils.ImageHelper
+
+//import android.content.Intent
+//import android.net.Uri
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -182,17 +187,55 @@ fun ReportDetailScreen(
                 }
 
                 DetailCard(icon = Icons.Filled.Description, title = "Description") {
-                    Text(
-                        text = report.description,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            text = report.description,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp), color = MaterialTheme.colorScheme.outlineVariant)
+                        
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.Person,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Reported by ${report.reporterName.ifBlank { "Unknown User" }}",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
                 }
 
                 DetailCard(icon = Icons.Filled.LocationOn, title = "Location") {
-                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable(enabled = userRole == UserRole.VOLUNTEER) {
+                                val gmmIntentUri = Uri.parse("google.navigation:q=${report.latitude},${report.longitude}")
+                                val mapIntent = Intent(Intent.ACTION_VIEW, gmmIntentUri)
+                                mapIntent.setPackage("com.google.android.apps.maps")
+                                context.startActivity(mapIntent)
+                            },
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
                         CoordinateRow(label = "Latitude", value = "%.6f".format(report.latitude))
                         CoordinateRow(label = "Longitude", value = "%.6f".format(report.longitude))
+                        
+                        if (userRole == UserRole.VOLUNTEER) {
+                            Text(
+                                text = "Tap to navigate in Google Maps",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(top = 8.dp)
+                            )
+                        }
                     }
                 }
 

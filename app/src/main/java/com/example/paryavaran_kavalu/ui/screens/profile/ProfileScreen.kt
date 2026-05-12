@@ -158,18 +158,24 @@ fun ProfileScreen(
 
             // Stats Row
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(IntrinsicSize.Min), // Forces all children to have same height
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 StatCard(
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight(),
                     label = "Eco-Karma",
                     value = "%,d".format(userPoints),
                     icon = Icons.Default.Eco,
                     color = ecoGreen
                 )
                 StatCard(
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight(),
                     label = "Medal",
                     value = userMedal,
                     icon = Icons.Default.EmojiEvents,

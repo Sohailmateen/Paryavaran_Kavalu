@@ -13,6 +13,8 @@ data class Report(
     val timestamp: Timestamp? = null,
     val userRole: String = "",
     val userId: String = "",
+    val reporterName: String = "",
+    val reporterUid: String = "",
     val cleanedImageUrl: String = "",
     val cleanedBy: String = ""
 )

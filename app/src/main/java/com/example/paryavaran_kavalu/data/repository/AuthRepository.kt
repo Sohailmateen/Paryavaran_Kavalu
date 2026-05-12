@@ -3,6 +3,7 @@ package com.example.paryavaran_kavalu.data.repository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.FieldValue
 import kotlinx.coroutines.tasks.await
 
 class AuthRepository(
@@ -37,22 +38,47 @@ class AuthRepository(
                 "uid" to user.uid,
                 "name" to (user.displayName ?: ""),
                 "email" to (user.email ?: ""),
-                "role" to ""
+                "role" to "",
+                "points" to 0,
+                "medal" to "Eco Beginner"
             )
             docRef.set(userData).await()
         }
     }
 
     suspend fun saveUserRole(uid: String, name: String, email: String, role: String) {
-        val user = mapOf(
-            "uid" to uid,
-            "name" to name,
-            "email" to email,
-            "role" to role,
-            "points" to 0,
-            "medal" to "Eco Beginner"
-        )
-        firestore.collection("users").document(uid).set(user).await()
+        val docRef = firestore.collection("users").document(uid)
+        val snapshot = docRef.get().await()
+        
+        if (snapshot.exists()) {
+            docRef.update(
+                "name", name,
+                "email", email,
+                "role", role
+            ).await()
+        } else {
+            val user = mapOf(
+                "uid" to uid,
+                "name" to name,
+                "email" to email,
+                "role" to role,
+                "points" to 0,
+                "medal" to "Eco Beginner"
+            )
+            docRef.set(user).await()
+        }
+    }
+
+    suspend fun addPoints(uid: String, points: Int) {
+        firestore.collection("users").document(uid).update(
+            "points", FieldValue.increment(points.toLong())
+        ).await()
+    }
+
+    suspend fun updateMedal(uid: String, medal: String) {
+        firestore.collection("users").document(uid).update(
+            "medal", medal
+        ).await()
     }
 
     suspend fun updateKarma(uid: String, points: Int, medal: String) {

@@ -78,18 +78,27 @@ class ReportViewModel(
             initialValue = emptyList()
         )
 
-    val myReports: StateFlow<List<Report>> = combine(repository.getAllReports(), _userRole) { reports, role ->
-        val uid = FirebaseAuth.getInstance().currentUser?.uid
-        if (role == UserRole.VOLUNTEER) {
-            reports.filter { it.cleanedBy == uid }
-        } else {
-            reports.filter { it.userId == uid }
+    val myReports: StateFlow<List<Report>> = allReports
+        .map { reports ->
+            val uid = FirebaseAuth.getInstance().currentUser?.uid
+            reports.filter { it.userId == uid || it.reporterUid == uid }
         }
-    }.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = emptyList()
-    )
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
+    val cleanedReports: StateFlow<List<Report>> = allReports
+        .map { reports ->
+            val uid = FirebaseAuth.getInstance().currentUser?.uid
+            reports.filter { it.cleanedBy == uid }
+        }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
 
     init {
         loadUserProfile()
@@ -101,14 +110,23 @@ class ReportViewModel(
             try {
                 val data = authRepository.getUserData(uid)
                 if (data != null) {
-                    _userPoints.value = (data["points"] as? Long)?.toInt() ?: 0
-                    _userMedal.value = data["medal"] as? String ?: "Eco Beginner"
+                    val points = (data["points"] as? Long)?.toInt() ?: 0
+                    val medal = calculateMedal(points)
+                    
+                    _userPoints.value = points
+                    _userMedal.value = medal
                     _userName.value = data["name"] as? String ?: ""
+                    
                     val roleStr = data["role"] as? String
                     if (roleStr == "Volunteer") {
                         _userRole.value = UserRole.VOLUNTEER
                     } else {
                         _userRole.value = UserRole.CITIZEN
+                    }
+                    
+                    // Sync medal back to Firestore if it changed
+                    if (data["medal"] != medal) {
+                        authRepository.updateMedal(uid, medal)
                     }
                 }
             } catch (e: Exception) {
@@ -143,6 +161,8 @@ class ReportViewModel(
 
                 val user = FirebaseAuth.getInstance().currentUser
                 val userId = user?.uid ?: ""
+                val reporterName = _userName.value.ifBlank { user?.displayName ?: "Anonymous" }
+                
                 val newReport = Report(
                     wasteType = wasteType,
                     description = description,
@@ -152,16 +172,17 @@ class ReportViewModel(
                     status = "Pending",
                     timestamp = Timestamp.now(),
                     userId = userId,
-                    userRole = currentUserRole
+                    userRole = currentUserRole,
+                    reporterName = reporterName,
+                    reporterUid = userId
                 )
                 repository.insertReport(newReport)
                 
-                // Update Karma
-                val newPoints = _userPoints.value + 100
-                val newMedal = calculateMedal(newPoints)
-                _userPoints.value = newPoints
-                _userMedal.value = newMedal
-                authRepository.updateKarma(userId, newPoints, newMedal)
+                // Update Karma atomically
+                authRepository.addPoints(userId, 100)
+                
+                // Reload profile to update points and medal in UI
+                loadUserProfile()
 
                 _uiState.value = ReportUiState.Success
             } catch (e: Exception) {
@@ -185,11 +206,10 @@ class ReportViewModel(
                 repository.markAsCleaned(reportId, cleanedImageUrl, userId)
 
                 // Volunteers also get points for cleaning
-                val newPoints = _userPoints.value + 100
-                val newMedal = calculateMedal(newPoints)
-                _userPoints.value = newPoints
-                _userMedal.value = newMedal
-                authRepository.updateKarma(userId, newPoints, newMedal)
+                authRepository.addPoints(userId, 100)
+                
+                // Reload profile to update UI
+                loadUserProfile()
 
                 _uiState.value = ReportUiState.Success
             } catch (e: Exception) {

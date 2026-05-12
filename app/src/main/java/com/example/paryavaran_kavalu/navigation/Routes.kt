@@ -6,7 +6,7 @@ object Routes {
     const val REPORT = "report?lat={lat}&lng={lng}"
     const val MAP = "map"
     const val DETAIL = "detail/{reportId}"
-    const val LIST = "list"
+    const val LIST = "list?myReports={myReports}"
     const val LOGIN = "login"
     const val REGISTER = "register"
     const val ROLE_SELECTION = "role_selection"
@@ -14,6 +14,7 @@ object Routes {
     const val EDIT_PROFILE = "edit_profile"
 
     fun detailRoute(reportId: String) = "detail/$reportId"
+    fun listRoute(myReports: Boolean = false) = "list?myReports=$myReports"
     fun reportRoute(lat: Double? = null, lng: Double? = null): String {
         return if (lat != null && lng != null) "report?lat=$lat&lng=$lng" else "report"
     }

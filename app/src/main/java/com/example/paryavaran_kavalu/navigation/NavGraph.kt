@@ -27,11 +27,16 @@ import com.example.paryavaran_kavalu.viewmodel.AuthState
 import com.example.paryavaran_kavalu.viewmodel.UserRole
 import com.google.firebase.auth.FirebaseAuth
 
+import androidx.navigation.compose.currentBackStackEntryAsState
+
 @Composable
 fun NavGraph(navController: NavHostController) {
     val reportViewModel: ReportViewModel = viewModel(factory = ReportViewModel.Factory)
     val authViewModel: AuthViewModel = viewModel()
     
+    val currentBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = currentBackStackEntry?.destination?.route
+
     // Server Client ID from google-services.json (type 3 client)
     val webClientId = "459355564850-gs2pk6nm0vhgkug6bpdt0nqnv1qpbcde.apps.googleusercontent.com"
 
@@ -40,22 +45,31 @@ fun NavGraph(navController: NavHostController) {
     LaunchedEffect(authState) {
         when (val state = authState) {
             is AuthState.Success -> {
-                if (state.role.isNullOrEmpty()) {
-                    navController.navigate(Routes.ROLE_SELECTION) {
-                        popUpTo(navController.graph.startDestinationId) { inclusive = true }
-                    }
-                } else {
-                    val role = if (state.role == "Volunteer") UserRole.VOLUNTEER else UserRole.CITIZEN
-                    reportViewModel.setUserRole(role)
-                    navController.navigate(Routes.HOME) {
-                        popUpTo(navController.graph.startDestinationId) { inclusive = true }
+                // Add ROLE_SELECTION to authRoutes so we can auto-navigate to Home after selecting role
+                val authRoutes = listOf(Routes.LOGIN, Routes.REGISTER, Routes.SPLASH, Routes.ROLE_SELECTION, null)
+                if (currentRoute in authRoutes || currentRoute?.startsWith("splash") == true) {
+                    if (state.role.isNullOrEmpty()) {
+                        if (currentRoute != Routes.ROLE_SELECTION) {
+                            navController.navigate(Routes.ROLE_SELECTION) {
+                                // Clear auth screens from backstack
+                                popUpTo(navController.graph.startDestinationId) { inclusive = true }
+                            }
+                        }
+                    } else {
+                        val role = if (state.role == "Volunteer") UserRole.VOLUNTEER else UserRole.CITIZEN
+                        reportViewModel.setUserRole(role)
+                        navController.navigate(Routes.HOME) {
+                            // Using popUpTo(0) ensures the entire backstack (Login/Register/Role) is cleared
+                            popUpTo(0) { inclusive = true }
+                        }
                     }
                 }
             }
             is AuthState.Error -> {
-                // Could navigate to Login if an error occurs during auto-login
-                navController.navigate(Routes.LOGIN) {
-                    popUpTo(navController.graph.startDestinationId) { inclusive = true }
+                if (currentRoute !in listOf(Routes.LOGIN, Routes.REGISTER)) {
+                    navController.navigate(Routes.LOGIN) {
+                        popUpTo(0) { inclusive = true }
+                    }
                 }
             }
             else -> {}
@@ -123,7 +137,7 @@ fun NavGraph(navController: NavHostController) {
                 viewModel = reportViewModel,
                 onNavigateToReport = { navController.navigate(Routes.REPORT) },
                 onNavigateToMap = { navController.navigate(Routes.MAP) },
-                onNavigateToList = { navController.navigate(Routes.LIST) },
+                onNavigateToList = { navController.navigate(Routes.listRoute(false)) },
                 onNavigateToDetail = { reportId ->
                     navController.navigate(Routes.detailRoute(reportId))
                 },
@@ -142,7 +156,7 @@ fun NavGraph(navController: NavHostController) {
                 viewModel = reportViewModel,
                 onBack = { navController.popBackStack() },
                 onEditProfile = { navController.navigate(Routes.EDIT_PROFILE) },
-                onMyReports = { navController.navigate(Routes.LIST) },
+                onMyReports = { navController.navigate(Routes.listRoute(true)) },
                 onLogout = {
                     authViewModel.signOut()
                     navController.navigate(Routes.LOGIN) {
@@ -207,9 +221,14 @@ fun NavGraph(navController: NavHostController) {
             )
         }
 
-        composable(Routes.LIST) {
+        composable(
+            route = Routes.LIST,
+            arguments = listOf(navArgument("myReports") { type = NavType.BoolType; defaultValue = false })
+        ) { backStackEntry ->
+            val showOnlyMyReports = backStackEntry.arguments?.getBoolean("myReports") ?: false
             ReportListScreen(
                 viewModel = reportViewModel,
+                showOnlyMyReports = showOnlyMyReports,
                 onNavigateToDetail = { reportId ->
                     navController.navigate(Routes.detailRoute(reportId))
                 },
