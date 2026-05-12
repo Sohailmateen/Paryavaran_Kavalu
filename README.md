@@ -111,8 +111,8 @@ Notification when:
 * FusedLocationProviderClient
 
 ## Database
-
-* Room Database (Initial local implementation)
+- Firebase Firestore (Cloud Database)
+- Room Database (Initial prototype/local simulation phase)
 
 ---
 
