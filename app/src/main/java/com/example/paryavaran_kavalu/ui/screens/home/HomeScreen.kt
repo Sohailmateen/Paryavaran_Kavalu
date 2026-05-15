@@ -52,11 +52,20 @@ fun HomeScreen(
         viewModel.refreshProfile()
     }
 
-    val pendingCount = myReports.count { it.status == "Pending" }
-    val cleanedCount = if (userRole == UserRole.CITIZEN) {
-        myReports.count { it.status == "Cleaned" }
+    val pendingCount = if (userRole == UserRole.VOLUNTEER) {
+        // Volunteers see all community pending reports as "Pending Work"
+        allReports.count { it.status == "Pending" }
     } else {
+        // Citizens see only their own pending reports
+        myReports.count { it.status == "Pending" }
+    }
+    
+    val cleanedCount = if (userRole == UserRole.VOLUNTEER) {
+        // Volunteers see reports they personally cleaned
         cleanedReports.count { it.status == "Cleaned" }
+    } else {
+        // Citizens see their own reports that have been cleaned
+        myReports.count { it.status == "Cleaned" }
     }
 
     if (showLogoutDialog) {

@@ -78,16 +78,20 @@ class ReportViewModel(
             initialValue = emptyList()
         )
 
-    val myReports: StateFlow<List<Report>> = allReports
-        .map { reports ->
-            val uid = FirebaseAuth.getInstance().currentUser?.uid
+    val myReports: StateFlow<List<Report>> = combine(allReports, _userRole) { reports, role ->
+        val uid = FirebaseAuth.getInstance().currentUser?.uid
+        if (role == UserRole.VOLUNTEER) {
+            // Volunteers see what they have personally cleaned in "My Reports"
+            reports.filter { it.cleanedBy == uid }
+        } else {
+            // Citizens see what they have personally reported
             reports.filter { it.userId == uid || it.reporterUid == uid }
         }
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyList()
-        )
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
 
     val cleanedReports: StateFlow<List<Report>> = allReports
         .map { reports ->
