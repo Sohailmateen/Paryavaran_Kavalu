@@ -7,6 +7,59 @@ Paryavaran-Kavalu is an Android application developed to help citizens report il
 The application enables volunteers to identify waste locations, navigate to them, and update cleanup status efficiently.
 
 ---
+# 📱 App Preview
+
+## Splash Screen & Dashboard
+
+<table align="center">
+<tr>
+<td align="center">
+<img src="https://github.com/user-attachments/assets/971a1fa9-aa52-41b5-9227-12dad3bb5697" width="250"/><br>
+<b>Splash Screen</b>
+</td>
+
+<td align="center">
+<img src="https://github.com/user-attachments/assets/edacacdd-525b-496c-b672-ca650cca0c54" width="250"/><br>
+<b>Home Dashboard</b>
+</td>
+</tr>
+</table>
+
+<br>
+
+## Waste Reporting
+
+<table align="center">
+<tr>
+<td align="center">
+<img src="https://github.com/user-attachments/assets/a6e9f474-3bbd-4953-82e2-b7486b484584" width="250"/><br>
+<b>New Report Screen</b>
+</td>
+
+<td align="center">
+<img src="https://github.com/user-attachments/assets/e3eacb89-ea87-4f64-a4af-4c563fb4005b" width="250"/><br>
+<b>Reports List</b>
+</td>
+</tr>
+</table>
+
+<br>
+
+## Maps & Tracking
+
+<table align="center">
+<tr>
+<td align="center">
+<img src="https://github.com/user-attachments/assets/b6af9744-73cf-493c-be14-580faf7d8372" width="250"/><br>
+<b>Waste Map</b>
+</td>
+
+<td align="center">
+<img src="https://github.com/user-attachments/assets/3da5e429-c644-4a58-a30f-6f6eac23db49" width="250"/><br>
+<b>Report Details</b>
+</td>
+</tr>
+</table>
 
 # 🚀 Features
 
